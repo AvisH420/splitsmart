@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "SplitSmart",
+    "slug": "splitsmart",
+    "version": "0.1.0",
+    "scheme": "splitsmart",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "edgeToEdgeEnabled": true
+    }
+  }
+}
