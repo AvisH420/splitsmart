@@ -4,17 +4,19 @@ import {
   useLocalSearchParams,
   useRouter,
 } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Avatar } from '../../../../lib/components/Avatar';
 import { computeBalances } from '../../../../lib/balances';
+import { EXPENSE_CATEGORIES } from '../../../../lib/categories';
 import { computeGroupSummary, type GroupSummary } from '../../../../lib/stats';
 import { formatMoney } from '../../../../lib/format';
 import {
@@ -26,6 +28,7 @@ import { listMembers } from '../../../../lib/repositories/members';
 import { listSettlements } from '../../../../lib/repositories/settlements';
 import type {
   Expense,
+  ExpenseCategory,
   Group,
   GroupMemberWithProfile,
   MemberBalance,
@@ -42,6 +45,28 @@ export default function GroupDetailScreen() {
   const [summary, setSummary] = useState<GroupSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Client-side search/filter state (data is already loaded; no new queries).
+  const [memberQuery, setMemberQuery] = useState('');
+  const [expenseQuery, setExpenseQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | null>(null);
+
+  const filteredMembers = useMemo(() => {
+    const q = memberQuery.trim().toLowerCase();
+    if (!q) return members;
+    return members.filter((m) =>
+      m.profile.display_name.toLowerCase().includes(q)
+    );
+  }, [members, memberQuery]);
+
+  const filteredExpenses = useMemo(() => {
+    const q = expenseQuery.trim().toLowerCase();
+    return expenses.filter(
+      (e) =>
+        (q === '' || e.title.toLowerCase().includes(q)) &&
+        (categoryFilter === null || e.category === categoryFilter)
+    );
+  }, [expenses, expenseQuery, categoryFilter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -153,15 +178,28 @@ export default function GroupDetailScreen() {
           <Text style={styles.action}>+ Add</Text>
         </Pressable>
       </View>
-      {members.map((m) => (
-        <View key={m.user_id} style={styles.row}>
-          <Avatar name={m.profile.display_name} uri={m.profile.avatar_url} size={32} />
-          <Text style={[styles.rowTitle, styles.rowTitleWithAvatar]}>
-            {m.profile.display_name}
-          </Text>
-          <Text style={styles.rowMeta}>{m.role}</Text>
-        </View>
-      ))}
+      {members.length > 3 ? (
+        <TextInput
+          style={styles.search}
+          placeholder="Search members"
+          value={memberQuery}
+          onChangeText={setMemberQuery}
+          autoCapitalize="none"
+        />
+      ) : null}
+      {filteredMembers.length === 0 ? (
+        <Text style={styles.empty}>No members match “{memberQuery}”.</Text>
+      ) : (
+        filteredMembers.map((m) => (
+          <View key={m.user_id} style={styles.row}>
+            <Avatar name={m.profile.display_name} uri={m.profile.avatar_url} size={32} />
+            <Text style={[styles.rowTitle, styles.rowTitleWithAvatar]}>
+              {m.profile.display_name}
+            </Text>
+            <Text style={styles.rowMeta}>{m.role}</Text>
+          </View>
+        ))
+      )}
 
       {/* Expenses */}
       <View style={styles.sectionHeader}>
@@ -173,22 +211,75 @@ export default function GroupDetailScreen() {
       {expenses.length === 0 ? (
         <Text style={styles.empty}>No expenses yet.</Text>
       ) : (
-        expenses.map((e) => (
-          <Pressable
-            key={e.id}
-            style={styles.row}
-            onPress={() => router.push(`/groups/${id}/expenses/${e.id}`)}
+        <>
+          <TextInput
+            style={styles.search}
+            placeholder="Search expenses"
+            value={expenseQuery}
+            onChangeText={setExpenseQuery}
+            autoCapitalize="none"
+          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
           >
-            <View style={styles.expenseMain}>
-              <Text style={styles.rowTitle}>{e.title}</Text>
-              <Text style={styles.rowMeta}>{nameFor(e.paid_by)} paid</Text>
-            </View>
-            <Text style={styles.amount}>
-              {formatMoney(e.total_amount, e.currency)}
-            </Text>
-            <Text style={styles.rowChevron}>›</Text>
-          </Pressable>
-        ))
+            <Pressable
+              style={[styles.filterChip, categoryFilter === null && styles.filterChipActive]}
+              onPress={() => setCategoryFilter(null)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  categoryFilter === null && styles.filterChipTextActive,
+                ]}
+              >
+                All
+              </Text>
+            </Pressable>
+            {EXPENSE_CATEGORIES.map((c) => (
+              <Pressable
+                key={c.value}
+                style={[
+                  styles.filterChip,
+                  categoryFilter === c.value && styles.filterChipActive,
+                ]}
+                onPress={() =>
+                  setCategoryFilter((cur) => (cur === c.value ? null : c.value))
+                }
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    categoryFilter === c.value && styles.filterChipTextActive,
+                  ]}
+                >
+                  {c.icon} {c.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          {filteredExpenses.length === 0 ? (
+            <Text style={styles.empty}>No expenses match your filters.</Text>
+          ) : (
+            filteredExpenses.map((e) => (
+              <Pressable
+                key={e.id}
+                style={styles.row}
+                onPress={() => router.push(`/groups/${id}/expenses/${e.id}`)}
+              >
+                <View style={styles.expenseMain}>
+                  <Text style={styles.rowTitle}>{e.title}</Text>
+                  <Text style={styles.rowMeta}>{nameFor(e.paid_by)} paid</Text>
+                </View>
+                <Text style={styles.amount}>
+                  {formatMoney(e.total_amount, e.currency)}
+                </Text>
+                <Text style={styles.rowChevron}>›</Text>
+              </Pressable>
+            ))
+          )}
+        </>
       )}
     </ScrollView>
   );
@@ -223,6 +314,27 @@ const styles = StyleSheet.create({
   summaryValue: { fontSize: 16, fontWeight: '700', color: '#1d9e75' },
   summaryLabel: { fontSize: 12, color: '#777' },
   rowChevron: { fontSize: 22, color: '#ccc', marginLeft: 8 },
+  search: {
+    marginHorizontal: 20,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 15,
+  },
+  filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingBottom: 8 },
+  filterChip: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  filterChipActive: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
+  filterChipText: { fontSize: 13, color: '#333' },
+  filterChipTextActive: { color: '#fff', fontWeight: '600' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
