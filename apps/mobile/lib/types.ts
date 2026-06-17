@@ -16,10 +16,23 @@ export type ExpenseStatus = 'draft' | 'needs_review' | 'confirmed';
 
 export type SplitType = 'equal' | 'exact' | 'percentage' | 'shares';
 
+export type ExpenseCategory =
+  | 'food'
+  | 'transport'
+  | 'accommodation'
+  | 'entertainment'
+  | 'utilities'
+  | 'health'
+  | 'shopping'
+  | 'other';
+
+export type InvitationStatus = 'pending' | 'accepted' | 'expired';
+
 export type Profile = {
   id: string;
   email: string | null;
   display_name: string;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -42,7 +55,7 @@ export type GroupMember = {
 
 /** A group member joined with their profile, as the UI usually wants it. */
 export type GroupMemberWithProfile = GroupMember & {
-  profile: Pick<Profile, 'id' | 'display_name' | 'email'>;
+  profile: Pick<Profile, 'id' | 'display_name' | 'email' | 'avatar_url'>;
 };
 
 export type Expense = {
@@ -54,7 +67,10 @@ export type Expense = {
   currency: string;
   status: ExpenseStatus;
   split_type: SplitType;
+  /** Optional category; null = uncategorised. */
+  category: ExpenseCategory | null;
   created_at: string;
+  updated_at: string;
 };
 
 export type ExpenseParticipant = {
@@ -62,16 +78,22 @@ export type ExpenseParticipant = {
   expense_id: string;
   user_id: string;
   share_amount: number;
+  /** Raw split input (percent / share-weight / exact amount); null for equal. */
+  split_value: number | null;
   created_at: string;
 };
 
 export type Settlement = {
   id: string;
   group_id: string;
+  /** Payer. */
   from_user: string;
+  /** Receiver. */
   to_user: string;
   amount: number;
   note: string | null;
+  /** Member who logged the settlement (may differ from payer/receiver). */
+  recorded_by: string;
   created_at: string;
 };
 
@@ -91,3 +113,57 @@ export type SettlementSuggestion = {
   toName: string;
   amount: number;
 };
+
+/**
+ * A single entry in the group activity feed. A discriminated union over the
+ * kinds of things that happen in a group, each carrying display-ready fields.
+ */
+export type ActivityItem =
+  | {
+      kind: 'expense';
+      id: string;
+      at: string;
+      /** True when the expense has been edited since it was created. */
+      edited: boolean;
+      title: string;
+      amount: number;
+      currency: string;
+      payerName: string;
+      /** Avatar of the primary actor (the payer), for the feed row. */
+      avatarUrl: string | null;
+    }
+  | {
+      kind: 'settlement';
+      id: string;
+      at: string;
+      fromName: string;
+      toName: string;
+      amount: number;
+      /** Set only when the recorder is neither payer nor receiver. */
+      recordedByName: string | null;
+      /** Avatar of the primary actor (the payer), for the feed row. */
+      avatarUrl: string | null;
+    }
+  | {
+      kind: 'member_joined';
+      id: string;
+      at: string;
+      name: string;
+      /** Avatar of the member who joined. */
+      avatarUrl: string | null;
+    };
+
+/** A pending/accepted email invitation to a group. */
+export type Invitation = {
+  id: string;
+  group_id: string;
+  invited_by: string;
+  email: string;
+  token: string;
+  status: InvitationStatus;
+  created_at: string;
+  expires_at: string;
+};
+
+/** Result of the invite_to_group RPC. */
+export type InviteResult = 'added' | 'invited';

@@ -40,9 +40,14 @@ export default function GroupsScreen() {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <Pressable onPress={signOut} hitSlop={8}>
-              <Text style={styles.headerAction}>Sign out</Text>
-            </Pressable>
+            <View style={styles.headerRight}>
+              <Pressable onPress={() => router.push('/profile')} hitSlop={8}>
+                <Text style={styles.headerIcon}>👤</Text>
+              </Pressable>
+              <Pressable onPress={signOut} hitSlop={8}>
+                <Text style={styles.headerAction}>Sign out</Text>
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -97,6 +102,8 @@ const styles = StyleSheet.create({
   },
   rowTitle: { flex: 1, fontSize: 17, fontWeight: '500' },
   rowChevron: { fontSize: 22, color: '#ccc' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  headerIcon: { fontSize: 20 },
   headerAction: { color: '#c0392b', fontSize: 15, fontWeight: '600' },
   fab: {
     position: 'absolute',

@@ -1,22 +1,23 @@
-import { equalSplit } from '../balances';
 import { supabase } from '../supabase';
+import type { ComputedShare } from '../splits';
 import type { Expense, ExpenseParticipant, SplitType } from '../types';
 import { unwrap, unwrapList } from './util';
 
-export type NewExpenseInput = {
+/**
+ * Input for creating or editing an expense. `participants` carries the
+ * already-resolved split (see lib/splits.ts `computeSplit`) so this layer
+ * only persists; it never decides how a total is divided.
+ */
+export type SaveExpenseInput = {
+  /** Omit / null to create; provide to update an existing expense. */
+  expenseId?: string | null;
   groupId: string;
   paidBy: string;
   title: string;
   totalAmount: number;
   currency?: string;
-  /** Members sharing the cost. */
-  participantUserIds: string[];
-  /**
-   * Optional explicit per-user shares (userId -> amount) for unequal splits.
-   * When omitted, the total is split equally across participantUserIds.
-   */
-  shares?: Record<string, number>;
-  splitType?: SplitType;
+  splitType: SplitType;
+  participants: ComputedShare[];
 };
 
 export async function listExpenses(groupId: string): Promise<Expense[]> {
@@ -26,6 +27,25 @@ export async function listExpenses(groupId: string): Promise<Expense[]> {
       .select('*')
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
+  );
+}
+
+export async function getExpense(expenseId: string): Promise<Expense> {
+  return unwrap(
+    await supabase.from('expenses').select('*').eq('id', expenseId).single()
+  );
+}
+
+/** Participant (split) rows for a single expense. */
+export async function listParticipants(
+  expenseId: string
+): Promise<ExpenseParticipant[]> {
+  return unwrapList(
+    await supabase
+      .from('expense_participants')
+      .select('*')
+      .eq('expense_id', expenseId)
+      .order('created_at', { ascending: true })
   );
 }
 
@@ -47,62 +67,43 @@ export async function listParticipantsForGroup(
 }
 
 /**
- * Create an expense and its participant split rows.
- *
- * NOTE: this is two writes without a DB transaction. If the participant
- * insert fails, the expense row is left with no split (so it contributes a
- * credit to the payer but no debits). For an MVP this is acceptable; the
- * proper fix is a single create_expense RPC doing both in one transaction.
- * TODO(phase-next): move to a transactional create_expense RPC.
+ * Create or update an expense and its split in one transaction via the
+ * save_expense RPC. The RPC validates membership and that the shares
+ * reconcile to the total, so a bad split can never leave a half-written
+ * expense (the Phase 1 hazard this replaces).
  */
-export async function createExpense(input: NewExpenseInput): Promise<Expense> {
+export async function saveExpense(input: SaveExpenseInput): Promise<Expense> {
   const {
+    expenseId = null,
     groupId,
     paidBy,
     title,
     totalAmount,
     currency = 'INR',
-    participantUserIds,
-    shares,
-    splitType = 'equal',
+    splitType,
+    participants,
   } = input;
 
-  if (participantUserIds.length === 0) {
+  if (participants.length === 0) {
     throw new Error('An expense needs at least one participant');
   }
 
-  const expense = unwrap(
-    await supabase
-      .from('expenses')
-      .insert({
-        group_id: groupId,
-        paid_by: paidBy,
-        title: title.trim(),
-        total_amount: totalAmount,
-        currency,
-        // Manually-entered expenses are confirmed immediately; the AI
-        // pipeline (later phase) is what produces 'draft'/'needs_review'.
-        status: 'confirmed',
-        split_type: splitType,
-      })
-      .select('*')
-      .single()
+  return unwrap(
+    await supabase.rpc('save_expense', {
+      p_expense_id: expenseId,
+      p_group_id: groupId,
+      p_paid_by: paidBy,
+      p_title: title.trim(),
+      p_total_amount: totalAmount,
+      p_currency: currency,
+      p_split_type: splitType,
+      p_participants: participants.map((p) => ({
+        user_id: p.userId,
+        share_amount: p.shareAmount,
+        split_value: p.splitValue,
+      })),
+    })
   );
-
-  const amounts = shares
-    ? participantUserIds.map((id) => shares[id] ?? 0)
-    : equalSplit(totalAmount, participantUserIds.length);
-
-  const participantRows = participantUserIds.map((userId, i) => ({
-    expense_id: expense.id,
-    user_id: userId,
-    share_amount: amounts[i],
-  }));
-
-  const { error } = await supabase.from('expense_participants').insert(participantRows);
-  if (error) throw new Error(error.message);
-
-  return expense;
 }
 
 export async function deleteExpense(expenseId: string): Promise<void> {

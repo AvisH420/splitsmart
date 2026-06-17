@@ -13,7 +13,9 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Avatar } from '../../../../lib/components/Avatar';
 import { computeBalances } from '../../../../lib/balances';
+import { computeGroupSummary, type GroupSummary } from '../../../../lib/stats';
 import { formatMoney } from '../../../../lib/format';
 import {
   listExpenses,
@@ -37,6 +39,7 @@ export default function GroupDetailScreen() {
   const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [balances, setBalances] = useState<MemberBalance[]>([]);
+  const [summary, setSummary] = useState<GroupSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +61,7 @@ export default function GroupDetailScreen() {
           setMembers(mem);
           setExpenses(exp);
           setBalances(computeBalances(mem, exp, parts, setl));
+          setSummary(computeGroupSummary(mem, exp, parts, setl));
         } catch (e) {
           if (active) setError((e as Error).message);
         } finally {
@@ -82,7 +86,40 @@ export default function GroupDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: group?.name ?? 'Group' }} />
+      <Stack.Screen
+        options={{
+          title: group?.name ?? 'Group',
+          headerRight: () => (
+            <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
+              <Text style={styles.action}>Activity</Text>
+            </Pressable>
+          ),
+        }}
+      />
+
+      {/* Summary */}
+      {summary ? (
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>
+              {formatMoney(summary.totalSpent)}
+            </Text>
+            <Text style={styles.summaryLabel}>Total spent</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{summary.expenseCount}</Text>
+            <Text style={styles.summaryLabel}>
+              {summary.expenseCount === 1 ? 'Expense' : 'Expenses'}
+            </Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>
+              {formatMoney(summary.totalSettled)}
+            </Text>
+            <Text style={styles.summaryLabel}>Settled</Text>
+          </View>
+        </View>
+      ) : null}
 
       {/* Balances */}
       <View style={styles.sectionHeader}>
@@ -118,7 +155,10 @@ export default function GroupDetailScreen() {
       </View>
       {members.map((m) => (
         <View key={m.user_id} style={styles.row}>
-          <Text style={styles.rowTitle}>{m.profile.display_name}</Text>
+          <Avatar name={m.profile.display_name} uri={m.profile.avatar_url} size={32} />
+          <Text style={[styles.rowTitle, styles.rowTitleWithAvatar]}>
+            {m.profile.display_name}
+          </Text>
           <Text style={styles.rowMeta}>{m.role}</Text>
         </View>
       ))}
@@ -134,7 +174,11 @@ export default function GroupDetailScreen() {
         <Text style={styles.empty}>No expenses yet.</Text>
       ) : (
         expenses.map((e) => (
-          <View key={e.id} style={styles.row}>
+          <Pressable
+            key={e.id}
+            style={styles.row}
+            onPress={() => router.push(`/groups/${id}/expenses/${e.id}`)}
+          >
             <View style={styles.expenseMain}>
               <Text style={styles.rowTitle}>{e.title}</Text>
               <Text style={styles.rowMeta}>{nameFor(e.paid_by)} paid</Text>
@@ -142,7 +186,8 @@ export default function GroupDetailScreen() {
             <Text style={styles.amount}>
               {formatMoney(e.total_amount, e.currency)}
             </Text>
-          </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </Pressable>
         ))
       )}
     </ScrollView>
@@ -164,6 +209,20 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 18, fontWeight: '700' },
   action: { color: '#1d9e75', fontSize: 15, fontWeight: '600' },
+  summaryCard: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#f3faf7',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#cce8dd',
+  },
+  summaryItem: { flex: 1, alignItems: 'center', gap: 2 },
+  summaryValue: { fontSize: 16, fontWeight: '700', color: '#1d9e75' },
+  summaryLabel: { fontSize: 12, color: '#777' },
+  rowChevron: { fontSize: 22, color: '#ccc', marginLeft: 8 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -173,6 +232,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   rowTitle: { fontSize: 16, fontWeight: '500' },
+  rowTitleWithAvatar: { flex: 1, marginLeft: 12 },
   rowMeta: { fontSize: 13, color: '#999' },
   expenseMain: { flex: 1, gap: 2 },
   amount: { fontSize: 16, fontWeight: '600' },

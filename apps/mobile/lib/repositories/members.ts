@@ -23,7 +23,7 @@ export async function listMembers(groupId: string): Promise<GroupMemberWithProfi
   const profiles = unwrapList(
     await supabase
       .from('profiles')
-      .select('id, display_name, email')
+      .select('id, display_name, email, avatar_url')
       .in(
         'id',
         members.map((m) => m.user_id)
@@ -37,6 +37,7 @@ export async function listMembers(groupId: string): Promise<GroupMemberWithProfi
       id: m.user_id,
       display_name: 'Unknown',
       email: null,
+      avatar_url: null,
     },
   }));
 }

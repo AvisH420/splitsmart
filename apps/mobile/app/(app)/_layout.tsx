@@ -15,12 +15,18 @@ export default function AppLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Groups' }} />
+      <Stack.Screen name="profile" options={{ title: 'Profile' }} />
       <Stack.Screen name="groups/new" options={{ title: 'New Group', presentation: 'modal' }} />
       <Stack.Screen name="groups/[id]/index" options={{ title: 'Group' }} />
       <Stack.Screen
         name="groups/[id]/expense"
         options={{ title: 'New Expense', presentation: 'modal' }}
       />
+      <Stack.Screen
+        name="groups/[id]/expenses/[expenseId]"
+        options={{ title: 'Expense' }}
+      />
+      <Stack.Screen name="groups/[id]/activity" options={{ title: 'Activity' }} />
       <Stack.Screen
         name="groups/[id]/members"
         options={{ title: 'Add Member', presentation: 'modal' }}

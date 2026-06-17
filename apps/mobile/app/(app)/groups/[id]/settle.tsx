@@ -36,7 +36,8 @@ export default function SettleScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state for recording a payment the current user made.
+  // A settlement is from payer -> receiver, logged by the current user.
+  const [fromUser, setFromUser] = useState<string | undefined>(currentUserId);
   const [toUser, setToUser] = useState<string | undefined>(undefined);
   const [amountText, setAmountText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -55,11 +56,15 @@ export default function SettleScreen() {
         const suggs = suggestSettlements(balances);
         setSuggestions(suggs);
 
-        // Prefill from the suggestion where the current user is the payer.
-        const mine = suggs.find((s) => s.fromUserId === currentUserId);
+        // Prefill from the suggestion involving the current user, else the first.
+        const mine =
+          suggs.find((s) => s.fromUserId === currentUserId) ?? suggs[0];
         if (mine) {
+          setFromUser(mine.fromUserId);
           setToUser(mine.toUserId);
           setAmountText(String(mine.amount));
+        } else if (!fromUser && mem[0]) {
+          setFromUser(mem[0].user_id);
         }
       } catch (e) {
         setError((e as Error).message);
@@ -71,19 +76,26 @@ export default function SettleScreen() {
   }, [id]);
 
   const amount = parseAmount(amountText);
-  const recipients = members.filter((m) => m.user_id !== currentUserId);
-  const canSubmit = !!currentUserId && !!toUser && !!amount && !submitting;
+  const receivers = members.filter((m) => m.user_id !== fromUser);
+  const canSubmit =
+    !!currentUserId &&
+    !!fromUser &&
+    !!toUser &&
+    fromUser !== toUser &&
+    !!amount &&
+    !submitting;
 
   const onRecord = async () => {
-    if (!currentUserId || !toUser || !amount) return;
+    if (!currentUserId || !fromUser || !toUser || !amount) return;
     setSubmitting(true);
     setError(null);
     try {
       await createSettlement({
         groupId: id,
-        fromUser: currentUserId,
+        fromUser,
         toUser,
         amount,
+        recordedBy: currentUserId,
       });
       router.back();
     } catch (e) {
@@ -92,48 +104,72 @@ export default function SettleScreen() {
     }
   };
 
+  const applySuggestion = (s: SettlementSuggestion) => {
+    setFromUser(s.fromUserId);
+    setToUser(s.toUserId);
+    setAmountText(String(s.amount));
+  };
+
   if (loading) {
     return <ActivityIndicator style={styles.center} size="large" />;
   }
+
+  const renderChips = (
+    selected: string | undefined,
+    onSelect: (userId: string) => void,
+    list: GroupMemberWithProfile[]
+  ) => (
+    <View style={styles.chips}>
+      {list.map((m) => (
+        <Pressable
+          key={m.user_id}
+          style={[styles.chip, selected === m.user_id && styles.chipActive]}
+          onPress={() => onSelect(m.user_id)}
+        >
+          <Text
+            style={[styles.chipText, selected === m.user_id && styles.chipTextActive]}
+          >
+            {m.profile.display_name}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.sectionTitle}>Suggested payments</Text>
         {suggestions.length === 0 ? (
           <Text style={styles.empty}>Everyone is settled up. 🎉</Text>
         ) : (
           suggestions.map((s, i) => (
-            <View key={i} style={styles.suggestion}>
+            <Pressable key={i} style={styles.suggestion} onPress={() => applySuggestion(s)}>
               <Text style={styles.suggestionText}>
                 {s.fromName} pays {s.toName}
               </Text>
               <Text style={styles.suggestionAmount}>{formatMoney(s.amount)}</Text>
-            </View>
+            </Pressable>
           ))
         )}
 
         <Text style={[styles.sectionTitle, styles.formTitle]}>Record a payment</Text>
-        <Text style={styles.hint}>You paid…</Text>
 
-        <View style={styles.chips}>
-          {recipients.map((m) => (
-            <Pressable
-              key={m.user_id}
-              style={[styles.chip, toUser === m.user_id && styles.chipActive]}
-              onPress={() => setToUser(m.user_id)}
-            >
-              <Text
-                style={[styles.chipText, toUser === m.user_id && styles.chipTextActive]}
-              >
-                {m.profile.display_name}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <Text style={styles.hint}>Who paid</Text>
+        {renderChips(
+          fromUser,
+          (u) => {
+            setFromUser(u);
+            if (toUser === u) setToUser(undefined);
+          },
+          members
+        )}
+
+        <Text style={styles.hint}>Who received</Text>
+        {renderChips(toUser, setToUser, receivers)}
 
         <Text style={styles.hint}>Amount</Text>
         <TextInput
