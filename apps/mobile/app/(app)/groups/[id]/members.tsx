@@ -4,24 +4,38 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   TextInput,
 } from 'react-native';
-import { addMemberByEmail } from '../../../../lib/repositories/members';
+import {
+  getPendingInvitation,
+  inviteToGroup,
+} from '../../../../lib/repositories/invitations';
+import { inviteUrl } from '../../../../lib/use-invite-link';
 
-export default function AddMemberScreen() {
+export default function InviteMemberScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const onAdd = async () => {
+  const onInvite = async () => {
     setSubmitting(true);
     setError(null);
     try {
-      await addMemberByEmail(id, email);
+      const result = await inviteToGroup(id, email);
+      if (result === 'invited') {
+        // No account yet: surface a shareable link (no email backend in MVP).
+        const inv = await getPendingInvitation(id, email);
+        if (inv) {
+          await Share.share({
+            message: `Join my group on SplitSmart: ${inviteUrl(inv.token)}`,
+          });
+        }
+      }
       router.back();
     } catch (e) {
       setError((e as Error).message);
@@ -34,7 +48,7 @@ export default function AddMemberScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.label}>Member email</Text>
+      <Text style={styles.label}>Invite by email</Text>
       <TextInput
         style={styles.input}
         placeholder="friend@example.com"
@@ -45,20 +59,21 @@ export default function AddMemberScreen() {
         autoComplete="email"
         autoFocus
         returnKeyType="done"
-        onSubmitEditing={() => email.trim() && onAdd()}
+        onSubmitEditing={() => email.trim() && onInvite()}
       />
       <Text style={styles.hint}>
-        The person must already have a SplitSmart account with this email.
+        If they already have a SplitSmart account they’ll be added right away.
+        Otherwise we’ll create an invite link for you to share.
       </Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Pressable
         style={[styles.button, (submitting || !email.trim()) && styles.buttonDisabled]}
-        onPress={onAdd}
+        onPress={onInvite}
         disabled={submitting || !email.trim()}
       >
-        <Text style={styles.buttonText}>{submitting ? 'Adding…' : 'Add member'}</Text>
+        <Text style={styles.buttonText}>{submitting ? 'Inviting…' : 'Invite'}</Text>
       </Pressable>
     </KeyboardAvoidingView>
   );

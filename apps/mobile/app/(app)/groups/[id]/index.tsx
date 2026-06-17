@@ -175,7 +175,7 @@ export default function GroupDetailScreen() {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Members ({members.length})</Text>
         <Pressable onPress={() => router.push(`/groups/${id}/members`)}>
-          <Text style={styles.action}>+ Add</Text>
+          <Text style={styles.action}>+ Invite</Text>
         </Pressable>
       </View>
       {members.length > 3 ? (

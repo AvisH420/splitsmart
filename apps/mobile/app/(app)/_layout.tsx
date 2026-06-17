@@ -1,11 +1,17 @@
 import { Stack } from 'expo-router';
+import { useInviteLink } from '../../lib/use-invite-link';
 
 /**
  * Layout for the authenticated section. Headers are on here (the root
  * layout keeps its own header off) so the group/expense screens get titles
  * and a back button for free. Individual screens set their own title.
+ *
+ * Also the home for invite deep-link handling: this tree only mounts once the
+ * user is authenticated, which is exactly when accept_invitation can run.
  */
 export default function AppLayout() {
+  useInviteLink();
+
   return (
     <Stack
       screenOptions={{
@@ -29,7 +35,7 @@ export default function AppLayout() {
       <Stack.Screen name="groups/[id]/activity" options={{ title: 'Activity' }} />
       <Stack.Screen
         name="groups/[id]/members"
-        options={{ title: 'Add Member', presentation: 'modal' }}
+        options={{ title: 'Invite Member', presentation: 'modal' }}
       />
       <Stack.Screen
         name="groups/[id]/settle"
