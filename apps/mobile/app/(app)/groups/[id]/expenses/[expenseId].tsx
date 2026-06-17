@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { Avatar } from '../../../../../lib/components/Avatar';
+import { categoryIcon, categoryLabel } from '../../../../../lib/categories';
 import { formatMoney } from '../../../../../lib/format';
 import {
   deleteExpense,
@@ -128,6 +129,13 @@ export default function ExpenseDetailScreen() {
           {new Date(expense.created_at).toLocaleString()}
           {expense.updated_at !== expense.created_at ? ' · edited' : ''}
         </Text>
+        {expense.category ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {categoryIcon(expense.category)} {categoryLabel(expense.category)}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <Text style={styles.sectionTitle}>Split breakdown</Text>
@@ -180,6 +188,17 @@ const styles = StyleSheet.create({
   amount: { fontSize: 32, fontWeight: '700', color: '#1d9e75' },
   title: { fontSize: 20, fontWeight: '600' },
   meta: { fontSize: 13, color: '#999' },
+  badge: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#f3faf7',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#cce8dd',
+  },
+  badgeText: { fontSize: 13, color: '#1d9e75', fontWeight: '600' },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',

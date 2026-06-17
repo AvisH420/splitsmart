@@ -1,6 +1,11 @@
 import { supabase } from '../supabase';
 import type { ComputedShare } from '../splits';
-import type { Expense, ExpenseParticipant, SplitType } from '../types';
+import type {
+  Expense,
+  ExpenseCategory,
+  ExpenseParticipant,
+  SplitType,
+} from '../types';
 import { unwrap, unwrapList } from './util';
 
 /**
@@ -17,6 +22,8 @@ export type SaveExpenseInput = {
   totalAmount: number;
   currency?: string;
   splitType: SplitType;
+  /** Optional category; null/omitted = uncategorised. */
+  category?: ExpenseCategory | null;
   participants: ComputedShare[];
 };
 
@@ -81,6 +88,7 @@ export async function saveExpense(input: SaveExpenseInput): Promise<Expense> {
     totalAmount,
     currency = 'INR',
     splitType,
+    category = null,
     participants,
   } = input;
 
@@ -97,6 +105,7 @@ export async function saveExpense(input: SaveExpenseInput): Promise<Expense> {
       p_total_amount: totalAmount,
       p_currency: currency,
       p_split_type: splitType,
+      p_category: category,
       p_participants: participants.map((p) => ({
         user_id: p.userId,
         share_amount: p.shareAmount,

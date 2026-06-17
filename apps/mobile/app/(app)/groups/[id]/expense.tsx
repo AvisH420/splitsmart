@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '../../../../lib/auth-context';
+import { EXPENSE_CATEGORIES } from '../../../../lib/categories';
 import { formatMoney, parseAmount } from '../../../../lib/format';
 import {
   getExpense,
@@ -20,7 +21,11 @@ import {
 } from '../../../../lib/repositories/expenses';
 import { listMembers } from '../../../../lib/repositories/members';
 import { computeSplit, validateSplit, type SplitInput } from '../../../../lib/splits';
-import type { GroupMemberWithProfile, SplitType } from '../../../../lib/types';
+import type {
+  ExpenseCategory,
+  GroupMemberWithProfile,
+  SplitType,
+} from '../../../../lib/types';
 
 const SPLIT_TABS: { type: SplitType; label: string }[] = [
   { type: 'equal', label: 'Equal' },
@@ -48,6 +53,7 @@ export default function ExpenseFormScreen() {
   const [title, setTitle] = useState('');
   const [amountText, setAmountText] = useState('');
   const [paidBy, setPaidBy] = useState<string | undefined>(currentUserId);
+  const [category, setCategory] = useState<ExpenseCategory | null>(null);
   const [splitType, setSplitTypeState] = useState<SplitType>('equal');
   const [participants, setParticipants] = useState<Set<string>>(new Set());
   /** Per-member raw split inputs (exact amount / percent / share weight). */
@@ -69,6 +75,7 @@ export default function ExpenseFormScreen() {
           setTitle(exp.title);
           setAmountText(String(exp.total_amount));
           setPaidBy(exp.paid_by);
+          setCategory(exp.category);
           setSplitTypeState(exp.split_type);
           setParticipants(new Set(parts.map((p) => p.user_id)));
           const v: Record<string, string> = {};
@@ -160,6 +167,7 @@ export default function ExpenseFormScreen() {
         title,
         totalAmount: amount,
         splitType,
+        category,
         participants: computeSplit(splitType, amount, inputs),
       });
       router.back();
@@ -221,6 +229,36 @@ export default function ExpenseFormScreen() {
             </Pressable>
           ))}
         </View>
+
+        <Text style={styles.label}>Category</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryRow}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Pressable
+            style={[styles.chip, category === null && styles.chipActive]}
+            onPress={() => setCategory(null)}
+          >
+            <Text style={[styles.chipText, category === null && styles.chipTextActive]}>
+              None
+            </Text>
+          </Pressable>
+          {EXPENSE_CATEGORIES.map((c) => (
+            <Pressable
+              key={c.value}
+              style={[styles.chip, category === c.value && styles.chipActive]}
+              onPress={() => setCategory(c.value)}
+            >
+              <Text
+                style={[styles.chipText, category === c.value && styles.chipTextActive]}
+              >
+                {c.icon} {c.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
 
         <Text style={styles.label}>Split</Text>
         <View style={styles.segment}>
@@ -309,6 +347,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  categoryRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
   chip: {
     borderWidth: 1,
     borderColor: '#ccc',
