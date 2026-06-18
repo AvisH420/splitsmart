@@ -14,12 +14,13 @@ import {
 import { Avatar } from '../../lib/components/Avatar';
 import { categoryLabel } from '../../lib/categories';
 import { formatMoney } from '../../lib/format';
-import { parseExpense, upsertMemory } from '../../lib/repositories/ai';
+import { parseExpense, searchExpenses, upsertMemory } from '../../lib/repositories/ai';
 import { saveExpense } from '../../lib/repositories/expenses';
 import { listMembers } from '../../lib/repositories/members';
 import { deleteMemory, listMemories } from '../../lib/repositories/memories';
 import { computeSplit, validateSplit, type SplitInput } from '../../lib/splits';
 import type {
+  ExpenseSearchResult,
   GroupMemberWithProfile,
   GroupMemory,
   ParsedExpense,
@@ -29,8 +30,15 @@ export default function AssistantScreen() {
   const { group_id } = useLocalSearchParams<{ group_id: string }>();
   const router = useRouter();
 
+  const [mode, setMode] = useState<'assistant' | 'search'>('assistant');
   const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
   const [prompt, setPrompt] = useState('');
+
+  // Search tab state.
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState<ExpenseSearchResult | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [context, setContext] = useState('');
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -170,6 +178,20 @@ export default function AssistantScreen() {
     }
   };
 
+  const onSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    setSearchError(null);
+    setSearchResult(null);
+    try {
+      setSearchResult(await searchExpenses(group_id, searchQuery.trim()));
+    } catch (e) {
+      setSearchError((e as Error).message);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -177,6 +199,27 @@ export default function AssistantScreen() {
     >
       <Stack.Screen options={{ title: 'AI Assistant' }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.tabs}>
+          <Pressable
+            style={[styles.tab, mode === 'assistant' && styles.tabActive]}
+            onPress={() => setMode('assistant')}
+          >
+            <Text style={[styles.tabText, mode === 'assistant' && styles.tabTextActive]}>
+              Assistant
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tab, mode === 'search' && styles.tabActive]}
+            onPress={() => setMode('search')}
+          >
+            <Text style={[styles.tabText, mode === 'search' && styles.tabTextActive]}>
+              Search
+            </Text>
+          </Pressable>
+        </View>
+
+        {mode === 'assistant' ? (
+          <>
         <Text style={styles.label}>Describe the expense</Text>
         <TextInput
           style={[styles.input, styles.multiline]}
@@ -333,6 +376,72 @@ export default function AssistantScreen() {
             </Text>
           </Pressable>
         </View>
+          </>
+        ) : (
+          <View style={styles.searchBlock}>
+            <Text style={styles.label}>Ask about your expenses</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. how much did we spend on food last month"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <Pressable
+              style={[
+                styles.button,
+                (searching || !searchQuery.trim()) && styles.buttonDisabled,
+              ]}
+              onPress={onSearch}
+              disabled={searching || !searchQuery.trim()}
+            >
+              <Text style={styles.buttonText}>{searching ? 'Searching…' : 'Search'}</Text>
+            </Pressable>
+
+            {searchError ? <Text style={styles.error}>{searchError}</Text> : null}
+
+            {searchResult ? (
+              <>
+                {searchResult.summary ? (
+                  <Text style={styles.summary}>{searchResult.summary}</Text>
+                ) : null}
+
+                {Object.keys(searchResult.filters_applied).length > 0 ? (
+                  <View style={styles.subjectChips}>
+                    {Object.entries(searchResult.filters_applied).map(([k, v]) => (
+                      <View key={k} style={styles.filterChip}>
+                        <Text style={styles.filterChipText}>
+                          {k.replace(/_/g, ' ')}: {String(v)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+
+                {searchResult.expenses.length === 0 ? (
+                  <Text style={styles.memoryEmpty}>No matching expenses.</Text>
+                ) : (
+                  searchResult.expenses.map((e) => (
+                    <Pressable
+                      key={e.id}
+                      style={styles.resultRow}
+                      onPress={() =>
+                        router.push(`/groups/${group_id}/expenses/${e.id}`)
+                      }
+                    >
+                      <View style={styles.resultMain}>
+                        <Text style={styles.resultTitle}>{e.title}</Text>
+                        <Text style={styles.resultMeta}>{nameFor(e.paid_by)} paid</Text>
+                      </View>
+                      <Text style={styles.resultAmount}>
+                        {formatMoney(e.total_amount, e.currency)}
+                      </Text>
+                    </Pressable>
+                  ))
+                )}
+              </>
+            ) : null}
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -424,4 +533,37 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
   chipText: { fontSize: 13, color: '#333' },
   chipTextActive: { color: '#fff', fontWeight: '600' },
+  tabs: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#1d9e75',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  tab: { flex: 1, paddingVertical: 9, alignItems: 'center' },
+  tabActive: { backgroundColor: '#1d9e75' },
+  tabText: { fontSize: 14, color: '#1d9e75', fontWeight: '600' },
+  tabTextActive: { color: '#fff' },
+  searchBlock: { gap: 10 },
+  summary: { fontSize: 16, fontWeight: '600', color: '#1d9e75', marginTop: 4 },
+  filterChip: {
+    backgroundColor: '#f3faf7',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#cce8dd',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  filterChipText: { fontSize: 12, color: '#1d9e75', fontWeight: '600' },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#eee',
+  },
+  resultMain: { flex: 1, gap: 2 },
+  resultTitle: { fontSize: 16, fontWeight: '500' },
+  resultMeta: { fontSize: 13, color: '#999' },
+  resultAmount: { fontSize: 16, fontWeight: '600' },
 });
