@@ -10,9 +10,12 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '../../../lib/auth-context';
+import { AnimatedListItem } from '../../../lib/components/AnimatedListItem';
+import { AnimatedScreen } from '../../../lib/components/AnimatedScreen';
 import { Button } from '../../../lib/components/Button';
 import { GlassCard } from '../../../lib/components/GlassCard';
 import { GradientBackground } from '../../../lib/components/GradientBackground';
+import { PressableScale } from '../../../lib/components/PressableScale';
 import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { listGroups } from '../../../lib/repositories/groups';
 import { theme } from '../../../lib/theme';
@@ -63,6 +66,7 @@ export default function GroupsScreen() {
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
+        <AnimatedScreen>
         <FlatList
           data={groups}
           keyExtractor={(g) => g.id}
@@ -83,15 +87,18 @@ export default function GroupsScreen() {
               />
             </View>
           }
-          renderItem={({ item }) => (
-            <Pressable onPress={() => router.push(`/groups/${item.id}`)}>
-              <GlassCard style={styles.row}>
-                <Text style={styles.rowTitle}>{item.name}</Text>
-                <Feather name="chevron-right" size={22} color={theme.colors.textTertiary} />
-              </GlassCard>
-            </Pressable>
+          renderItem={({ item, index }) => (
+            <AnimatedListItem index={index}>
+              <PressableScale onPress={() => router.push(`/groups/${item.id}`)}>
+                <GlassCard style={styles.row}>
+                  <Text style={styles.rowTitle}>{item.name}</Text>
+                  <Feather name="chevron-right" size={22} color={theme.colors.textTertiary} />
+                </GlassCard>
+              </PressableScale>
+            </AnimatedListItem>
           )}
         />
+        </AnimatedScreen>
       )}
     </GradientBackground>
   );

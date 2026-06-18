@@ -1,10 +1,13 @@
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { AnimatedListItem } from '../../../lib/components/AnimatedListItem';
+import { AnimatedScreen } from '../../../lib/components/AnimatedScreen';
 import { Avatar } from '../../../lib/components/Avatar';
 import { GlassCard } from '../../../lib/components/GlassCard';
 import { GradientBackground } from '../../../lib/components/GradientBackground';
+import { PressableScale } from '../../../lib/components/PressableScale';
 import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { formatMoney } from '../../../lib/format';
 import { listActivity } from '../../../lib/repositories/activity';
@@ -81,6 +84,7 @@ export default function GlobalActivityScreen() {
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
+        <AnimatedScreen>
         <FlatList
           data={items}
           keyExtractor={(it) => `${it.kind}:${it.id}`}
@@ -96,24 +100,27 @@ export default function GlobalActivityScreen() {
               </Text>
             </View>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const d = describe(item);
             return (
-              <Pressable onPress={() => router.push(`/groups/${item.groupId}`)}>
-                <GlassCard style={styles.row}>
-                  <Avatar name={d.name} uri={item.avatarUrl} size={40} />
-                  <View style={styles.body}>
-                    <Text style={styles.text}>{d.text}</Text>
-                    <Text style={styles.meta}>
-                      {item.groupName} - {new Date(item.at).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  {d.amount ? <Text style={styles.amount}>{d.amount}</Text> : null}
-                </GlassCard>
-              </Pressable>
+              <AnimatedListItem index={index}>
+                <PressableScale onPress={() => router.push(`/groups/${item.groupId}`)}>
+                  <GlassCard style={styles.row}>
+                    <Avatar name={d.name} uri={item.avatarUrl} size={40} />
+                    <View style={styles.body}>
+                      <Text style={styles.text}>{d.text}</Text>
+                      <Text style={styles.meta}>
+                        {item.groupName} - {new Date(item.at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    {d.amount ? <Text style={styles.amount}>{d.amount}</Text> : null}
+                  </GlassCard>
+                </PressableScale>
+              </AnimatedListItem>
             );
           }}
         />
+        </AnimatedScreen>
       )}
     </GradientBackground>
   );

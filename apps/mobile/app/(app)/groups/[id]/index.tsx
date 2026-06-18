@@ -19,6 +19,8 @@ import {
 import { useAuth } from '../../../../lib/auth-context';
 import { computeBalances } from '../../../../lib/balances';
 import { EXPENSE_CATEGORIES } from '../../../../lib/categories';
+import { AnimatedListItem } from '../../../../lib/components/AnimatedListItem';
+import { AnimatedMoney } from '../../../../lib/components/AnimatedMoney';
 import { AnimatedScreen } from '../../../../lib/components/AnimatedScreen';
 import { Avatar } from '../../../../lib/components/Avatar';
 import { Button } from '../../../../lib/components/Button';
@@ -167,14 +169,14 @@ export default function GroupDetailScreen() {
             {/* Balance hero */}
             <GlassCard style={styles.hero}>
               <Text style={styles.heroLabel}>Your balance</Text>
-              <Text
-                style={[
-                  styles.heroAmount,
-                  myNet > 0 ? styles.positive : myNet < 0 ? styles.negative : styles.neutral,
-                ]}
-              >
-                {myNet === 0 ? 'All settled' : formatMoney(Math.abs(myNet))}
-              </Text>
+              {myNet === 0 ? (
+                <Text style={[styles.heroAmount, styles.neutral]}>All settled</Text>
+              ) : (
+                <AnimatedMoney
+                  value={Math.abs(myNet)}
+                  style={[styles.heroAmount, myNet > 0 ? styles.positive : styles.negative]}
+                />
+              )}
               {myNet !== 0 ? (
                 <Text style={styles.heroSub}>
                   {myNet > 0 ? 'you are owed overall' : 'you owe overall'}
@@ -183,7 +185,7 @@ export default function GroupDetailScreen() {
 
               <View style={styles.statsRow}>
                 <View style={styles.stat}>
-                  <Text style={styles.statValue}>{formatMoney(totalSpent)}</Text>
+                  <AnimatedMoney value={totalSpent} style={styles.statValue} />
                   <Text style={styles.statLabel}>Total spent</Text>
                 </View>
                 <View style={styles.statDivider} />
@@ -335,9 +337,9 @@ export default function GroupDetailScreen() {
                   <Text style={styles.noMatch}>No expenses match your filters.</Text>
                 ) : (
                   <View style={styles.expenseList}>
-                    {filteredExpenses.map((e) => (
+                    {filteredExpenses.map((e, i) => (
+                      <AnimatedListItem key={e.id} index={i}>
                       <PressableScale
-                        key={e.id}
                         onPress={() => router.push(`/groups/${id}/expenses/${e.id}`)}
                       >
                         <GlassCard style={styles.expenseRow}>
@@ -350,6 +352,7 @@ export default function GroupDetailScreen() {
                           </Text>
                         </GlassCard>
                       </PressableScale>
+                      </AnimatedListItem>
                     ))}
                   </View>
                 )}

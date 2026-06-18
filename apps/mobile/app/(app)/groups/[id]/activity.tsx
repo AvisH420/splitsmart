@@ -1,6 +1,7 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { AnimatedListItem } from '../../../../lib/components/AnimatedListItem';
 import { AnimatedScreen } from '../../../../lib/components/AnimatedScreen';
 import { Avatar } from '../../../../lib/components/Avatar';
 import { GradientBackground } from '../../../../lib/components/GradientBackground';
@@ -75,17 +76,19 @@ export default function ActivityScreen() {
               const d = describe(item);
               const isLast = index === items.length - 1;
               return (
-                <View style={styles.row}>
-                  <View style={styles.rail}>
-                    {!isLast ? <View style={styles.line} /> : null}
-                    <Avatar name={d.name} uri={item.avatarUrl} size={40} />
+                <AnimatedListItem index={index}>
+                  <View style={styles.row}>
+                    <View style={styles.rail}>
+                      {!isLast ? <View style={styles.line} /> : null}
+                      <Avatar name={d.name} uri={item.avatarUrl} size={40} />
+                    </View>
+                    <View style={styles.body}>
+                      <Text style={styles.text}>{d.text}</Text>
+                      <Text style={styles.date}>{new Date(item.at).toLocaleString()}</Text>
+                    </View>
+                    {d.amount ? <Text style={styles.amount}>{d.amount}</Text> : null}
                   </View>
-                  <View style={styles.body}>
-                    <Text style={styles.text}>{d.text}</Text>
-                    <Text style={styles.date}>{new Date(item.at).toLocaleString()}</Text>
-                  </View>
-                  {d.amount ? <Text style={styles.amount}>{d.amount}</Text> : null}
-                </View>
+                </AnimatedListItem>
               );
             }}
           />

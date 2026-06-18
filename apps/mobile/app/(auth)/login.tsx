@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { AnimatedScreen } from '../../lib/components/AnimatedScreen';
 import { Button } from '../../lib/components/Button';
 import { GlassCard } from '../../lib/components/GlassCard';
 import { GradientBackground } from '../../lib/components/GradientBackground';
@@ -47,6 +48,7 @@ export default function LoginScreen() {
         style={styles.fill}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <AnimatedScreen>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView
             contentContainerStyle={styles.content}
@@ -90,6 +92,7 @@ export default function LoginScreen() {
             />
           </ScrollView>
         </TouchableWithoutFeedback>
+        </AnimatedScreen>
       </KeyboardAvoidingView>
     </GradientBackground>
   );
