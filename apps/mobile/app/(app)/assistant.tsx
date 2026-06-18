@@ -14,11 +14,16 @@ import {
 import { Avatar } from '../../lib/components/Avatar';
 import { categoryLabel } from '../../lib/categories';
 import { formatMoney } from '../../lib/format';
-import { parseExpense } from '../../lib/repositories/ai';
+import { parseExpense, upsertMemory } from '../../lib/repositories/ai';
 import { saveExpense } from '../../lib/repositories/expenses';
 import { listMembers } from '../../lib/repositories/members';
+import { deleteMemory, listMemories } from '../../lib/repositories/memories';
 import { computeSplit, validateSplit, type SplitInput } from '../../lib/splits';
-import type { GroupMemberWithProfile, ParsedExpense } from '../../lib/types';
+import type {
+  GroupMemberWithProfile,
+  GroupMemory,
+  ParsedExpense,
+} from '../../lib/types';
 
 export default function AssistantScreen() {
   const { group_id } = useLocalSearchParams<{ group_id: string }>();
@@ -33,10 +38,23 @@ export default function AssistantScreen() {
   const [clarification, setClarification] = useState<string | null>(null);
   const [parsed, setParsed] = useState<ParsedExpense | null>(null);
 
+  const [memories, setMemories] = useState<GroupMemory[]>([]);
+  const [memoryText, setMemoryText] = useState('');
+  const [memorySubject, setMemorySubject] = useState<string | null>(null);
+  const [addingMemory, setAddingMemory] = useState(false);
+  const [memoryError, setMemoryError] = useState<string | null>(null);
+
+  const loadMemories = () =>
+    listMemories(group_id)
+      .then(setMemories)
+      .catch((e) => setMemoryError((e as Error).message));
+
   useEffect(() => {
     listMembers(group_id)
       .then(setMembers)
       .catch((e) => setError((e as Error).message));
+    loadMemories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group_id]);
 
   const nameFor = (userId: string) =>
@@ -120,6 +138,36 @@ export default function AssistantScreen() {
       pathname: '/groups/[id]/expense',
       params: { id: group_id, prefill: JSON.stringify(parsed) },
     });
+  };
+
+  const onAddMemory = async () => {
+    if (!memoryText.trim()) return;
+    setAddingMemory(true);
+    setMemoryError(null);
+    try {
+      await upsertMemory({
+        groupId: group_id,
+        userId: memorySubject ?? '',
+        content: memoryText.trim(),
+        memoryType: 'preference',
+      });
+      setMemoryText('');
+      setMemorySubject(null);
+      await loadMemories();
+    } catch (e) {
+      setMemoryError((e as Error).message);
+    } finally {
+      setAddingMemory(false);
+    }
+  };
+
+  const onDeleteMemory = async (memoryId: string) => {
+    try {
+      await deleteMemory(memoryId);
+      setMemories((prev) => prev.filter((m) => m.id !== memoryId));
+    } catch (e) {
+      setMemoryError((e as Error).message);
+    }
   };
 
   return (
@@ -212,6 +260,79 @@ export default function AssistantScreen() {
             </Pressable>
           </View>
         ) : null}
+
+        {/* Group memory */}
+        <View style={styles.memorySection}>
+          <Text style={styles.sectionTitle}>Group memory</Text>
+          <Text style={styles.sectionHint}>
+            Things the assistant remembers about this group — used to improve
+            parsing and receipt splits.
+          </Text>
+
+          {memories.length === 0 ? (
+            <Text style={styles.memoryEmpty}>No memories yet.</Text>
+          ) : (
+            memories.map((m) => (
+              <View key={m.id} style={styles.memoryRow}>
+                <Text style={styles.memoryContent}>
+                  {m.subject_user_id ? `${nameFor(m.subject_user_id)}: ` : ''}
+                  {m.content}
+                </Text>
+                <Pressable onPress={() => onDeleteMemory(m.id)} hitSlop={8}>
+                  <Text style={styles.memoryDelete}>Delete</Text>
+                </Pressable>
+              </View>
+            ))
+          )}
+
+          <Text style={styles.memoryAbout}>About</Text>
+          <View style={styles.subjectChips}>
+            <Pressable
+              style={[styles.chip, memorySubject === null && styles.chipActive]}
+              onPress={() => setMemorySubject(null)}
+            >
+              <Text style={[styles.chipText, memorySubject === null && styles.chipTextActive]}>
+                Group
+              </Text>
+            </Pressable>
+            {members.map((m) => (
+              <Pressable
+                key={m.user_id}
+                style={[styles.chip, memorySubject === m.user_id && styles.chipActive]}
+                onPress={() => setMemorySubject(m.user_id)}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    memorySubject === m.user_id && styles.chipTextActive,
+                  ]}
+                >
+                  {m.profile.display_name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Priya is vegetarian"
+            value={memoryText}
+            onChangeText={setMemoryText}
+          />
+          {memoryError ? <Text style={styles.error}>{memoryError}</Text> : null}
+          <Pressable
+            style={[
+              styles.secondaryButton,
+              (addingMemory || !memoryText.trim()) && styles.buttonDisabled,
+            ]}
+            onPress={onAddMemory}
+            disabled={addingMemory || !memoryText.trim()}
+          >
+            <Text style={styles.secondaryText}>
+              {addingMemory ? 'Adding…' : '+ Add memory'}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -271,4 +392,36 @@ const styles = StyleSheet.create({
   shareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
   shareName: { flex: 1, fontSize: 15 },
   shareAmount: { fontSize: 15, fontWeight: '600' },
+  memorySection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#eee',
+    gap: 8,
+  },
+  sectionTitle: { fontSize: 18, fontWeight: '700' },
+  sectionHint: { fontSize: 13, color: '#999' },
+  memoryEmpty: { color: '#999', fontSize: 14, paddingVertical: 4 },
+  memoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#eee',
+  },
+  memoryContent: { flex: 1, fontSize: 15 },
+  memoryDelete: { color: '#c0392b', fontSize: 13, fontWeight: '600' },
+  memoryAbout: { fontSize: 13, color: '#666', marginTop: 8 },
+  subjectChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  chipActive: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
+  chipText: { fontSize: 13, color: '#333' },
+  chipTextActive: { color: '#fff', fontWeight: '600' },
 });

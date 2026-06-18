@@ -7,6 +7,7 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,12 +26,14 @@ import {
 } from '../../../../lib/repositories/expenses';
 import { getGroup } from '../../../../lib/repositories/groups';
 import { listMembers } from '../../../../lib/repositories/members';
+import { listMemories } from '../../../../lib/repositories/memories';
 import { listSettlements } from '../../../../lib/repositories/settlements';
 import type {
   Expense,
   ExpenseCategory,
   Group,
   GroupMemberWithProfile,
+  GroupMemory,
   MemberBalance,
 } from '../../../../lib/types';
 
@@ -43,6 +46,7 @@ export default function GroupDetailScreen() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [balances, setBalances] = useState<MemberBalance[]>([]);
   const [summary, setSummary] = useState<GroupSummary | null>(null);
+  const [memories, setMemories] = useState<GroupMemory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,12 +78,13 @@ export default function GroupDetailScreen() {
       setError(null);
       (async () => {
         try {
-          const [g, mem, exp, parts, setl] = await Promise.all([
+          const [g, mem, exp, parts, setl, mems] = await Promise.all([
             getGroup(id),
             listMembers(id),
             listExpenses(id),
             listParticipantsForGroup(id),
             listSettlements(id),
+            listMemories(id),
           ]);
           if (!active) return;
           setGroup(g);
@@ -87,6 +92,7 @@ export default function GroupDetailScreen() {
           setExpenses(exp);
           setBalances(computeBalances(mem, exp, parts, setl));
           setSummary(computeGroupSummary(mem, exp, parts, setl));
+          setMemories(mems);
         } catch (e) {
           if (active) setError((e as Error).message);
         } finally {
@@ -108,6 +114,17 @@ export default function GroupDetailScreen() {
 
   const nameFor = (userId: string) =>
     members.find((m) => m.user_id === userId)?.profile.display_name ?? 'Someone';
+
+  const memoriesFor = (userId: string) =>
+    memories.filter((m) => m.subject_user_id === userId);
+
+  const showMemories = (userId: string) => {
+    const list = memoriesFor(userId);
+    Alert.alert(
+      `${nameFor(userId)}'s memory`,
+      list.map((m) => `• ${m.content}`).join('\n') || 'No memories.'
+    );
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -206,6 +223,11 @@ export default function GroupDetailScreen() {
             <Text style={[styles.rowTitle, styles.rowTitleWithAvatar]}>
               {m.profile.display_name}
             </Text>
+            {memoriesFor(m.user_id).length > 0 ? (
+              <Pressable onPress={() => showMemories(m.user_id)} hitSlop={8}>
+                <Text style={styles.brain}>🧠</Text>
+              </Pressable>
+            ) : null}
             <Text style={styles.rowMeta}>{m.role}</Text>
           </View>
         ))
@@ -357,6 +379,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: { fontSize: 16, fontWeight: '500' },
   rowTitleWithAvatar: { flex: 1, marginLeft: 12 },
+  brain: { fontSize: 16, marginRight: 10 },
   rowMeta: { fontSize: 13, color: '#999' },
   expenseMain: { flex: 1, gap: 2 },
   amount: { fontSize: 16, fontWeight: '600' },

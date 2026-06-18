@@ -1,6 +1,6 @@
 import { preflight, json, errorResponse } from '../_shared/cors.ts';
 import { userClientFromRequest } from '../_shared/auth.ts';
-import { geminiJSON } from '../_shared/gemini.ts';
+import { geminiJSON, geminiEmbed } from '../_shared/gemini.ts';
 
 type Member = { id: string; name: string };
 
@@ -39,13 +39,16 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function systemPrompt(members: Member[]): string {
+function systemPrompt(members: Member[], memoryContext: string): string {
   const names = members.map((m) => m.name).join(', ');
   return [
     'You convert a natural-language expense description into a single JSON object.',
     'Return ONLY the JSON object — no markdown, no commentary.',
     '',
     `The group members are: ${names}.`,
+    ...(memoryContext
+      ? ['', 'Group context (use this to improve parsing):', memoryContext]
+      : []),
     'Use ONLY these member names for paid_by_name and participant names. Match',
     'nicknames/first names to the closest member. "me"/"I" refers to the speaker;',
     'if you cannot tell who the speaker is, set clarification_needed.',
@@ -78,9 +81,9 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
 
   try {
-    // Validates the Authorization header is present (RLS context, even though
-    // this function only reads the request and calls Gemini — never writes).
-    userClientFromRequest(req);
+    // RLS-scoped client (used for the memory lookup below); also asserts the
+    // Authorization header is present.
+    const { supabase } = userClientFromRequest(req);
 
     const { prompt, group_id, members } = await req.json();
     if (!prompt || typeof prompt !== 'string') {
@@ -91,8 +94,27 @@ Deno.serve(async (req) => {
       return errorResponse('members are required');
     }
 
+    // Best-effort: pull the top relevant group memories and feed them to the
+    // model as context. Never block parsing on a memory/embedding failure.
+    let memoryContext = '';
+    try {
+      const embedding = await geminiEmbed(prompt);
+      const { data: mems } = await supabase.rpc('match_group_memories', {
+        p_group_id: group_id,
+        query_embedding: embedding,
+        match_count: 5,
+      });
+      if (Array.isArray(mems) && mems.length > 0) {
+        memoryContext = mems
+          .map((m: { content: string }) => `- ${m.content}`)
+          .join('\n');
+      }
+    } catch (_) {
+      // ignore — context is optional
+    }
+
     const raw = await geminiJSON<RawParse>({
-      system: systemPrompt(members),
+      system: systemPrompt(members, memoryContext),
       prompt,
     });
 
