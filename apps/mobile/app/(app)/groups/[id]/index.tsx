@@ -115,9 +115,19 @@ export default function GroupDetailScreen() {
         options={{
           title: group?.name ?? 'Group',
           headerRight: () => (
-            <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
-              <Text style={styles.action}>Activity</Text>
-            </Pressable>
+            <View style={styles.headerRight}>
+              <Pressable
+                onPress={() =>
+                  router.push({ pathname: '/assistant', params: { group_id: id } })
+                }
+                hitSlop={8}
+              >
+                <Text style={styles.headerIcon}>✨</Text>
+              </Pressable>
+              <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
+                <Text style={styles.action}>Activity</Text>
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -300,6 +310,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 18, fontWeight: '700' },
   action: { color: '#1d9e75', fontSize: 15, fontWeight: '600' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  headerIcon: { fontSize: 18 },
   summaryCard: {
     flexDirection: 'row',
     marginHorizontal: 20,

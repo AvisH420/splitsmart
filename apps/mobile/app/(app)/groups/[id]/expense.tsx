@@ -42,7 +42,11 @@ function parseValue(text: string | undefined): number {
 }
 
 export default function ExpenseFormScreen() {
-  const { id, expenseId } = useLocalSearchParams<{ id: string; expenseId?: string }>();
+  const { id, expenseId, prefill } = useLocalSearchParams<{
+    id: string;
+    expenseId?: string;
+    prefill?: string;
+  }>();
   const isEdit = !!expenseId;
   const router = useRouter();
   const { session } = useAuth();
@@ -83,6 +87,32 @@ export default function ExpenseFormScreen() {
             if (p.split_value != null) v[p.user_id] = String(p.split_value);
           }
           setValues(v);
+        } else if (prefill) {
+          // Hydrate from an AI-parsed expense handed off by the assistant.
+          try {
+            const p = JSON.parse(prefill) as {
+              title: string;
+              total_amount: number;
+              paid_by: string;
+              split_type: SplitType;
+              category: ExpenseCategory | null;
+              participants: { user_id: string; split_value: number | null }[];
+            };
+            setTitle(p.title);
+            setAmountText(String(p.total_amount));
+            setPaidBy(p.paid_by);
+            setCategory(p.category);
+            setSplitTypeState(p.split_type);
+            setParticipants(new Set(p.participants.map((x) => x.user_id)));
+            const v: Record<string, string> = {};
+            for (const x of p.participants) {
+              if (x.split_value != null) v[x.user_id] = String(x.split_value);
+            }
+            setValues(v);
+          } catch {
+            // Malformed prefill: fall back to create defaults.
+            setParticipants(new Set(mem.map((m) => m.user_id)));
+          }
         } else {
           // Create defaults: everyone shares, the current user paid.
           setParticipants(new Set(mem.map((m) => m.user_id)));
