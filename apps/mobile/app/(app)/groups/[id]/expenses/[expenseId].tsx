@@ -26,12 +26,14 @@ import {
   deleteExpense,
   getExpense,
   listParticipants,
+  listPayers,
 } from '../../../../../lib/repositories/expenses';
 import { listMembers } from '../../../../../lib/repositories/members';
 import { useTheme, type Theme } from '../../../../../lib/theme';
 import type {
   Expense,
   ExpenseParticipant,
+  ExpensePayer,
   GroupMemberWithProfile,
 } from '../../../../../lib/types';
 
@@ -50,6 +52,7 @@ export default function ExpenseDetailScreen() {
 
   const [expense, setExpense] = useState<Expense | null>(null);
   const [participants, setParticipants] = useState<ExpenseParticipant[]>([]);
+  const [payers, setPayers] = useState<ExpensePayer[]>([]);
   const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,14 +64,16 @@ export default function ExpenseDetailScreen() {
       setError(null);
       (async () => {
         try {
-          const [exp, parts, mem] = await Promise.all([
+          const [exp, parts, pyrs, mem] = await Promise.all([
             getExpense(expenseId),
             listParticipants(expenseId),
+            listPayers(expenseId),
             listMembers(id),
           ]);
           if (!active) return;
           setExpense(exp);
           setParticipants(parts);
+          setPayers(pyrs);
           setMembers(mem);
         } catch (e) {
           if (active) setError((e as Error).message);
@@ -145,7 +150,8 @@ export default function ExpenseDetailScreen() {
               </Text>
               <Text style={styles.title}>{expense.title}</Text>
               <Text style={styles.meta}>
-                {nameFor(expense.paid_by)} paid - {SPLIT_LABEL[expense.split_type]}
+                {payers.length > 0 ? 'Multiple payers' : `${nameFor(expense.paid_by)} paid`} -{' '}
+                {SPLIT_LABEL[expense.split_type]}
               </Text>
               {expense.category ? (
                 <View style={styles.badge}>
@@ -157,6 +163,25 @@ export default function ExpenseDetailScreen() {
                 {expense.updated_at !== expense.created_at ? ' - edited' : ''}
               </Text>
             </GlassCard>
+
+            {payers.length > 0 ? (
+              <>
+                <Text style={styles.sectionTitle}>Paid by</Text>
+                <GlassCard style={styles.listCard}>
+                  {payers.map((p, i) => (
+                    <View key={p.id} style={[styles.row, i > 0 && styles.divider]}>
+                      <Avatar
+                        name={nameFor(p.user_id)}
+                        uri={memberFor(p.user_id)?.avatar_url}
+                        size={36}
+                      />
+                      <Text style={styles.rowName}>{nameFor(p.user_id)}</Text>
+                      <Text style={styles.rowShare}>{formatMoney(p.amount)}</Text>
+                    </View>
+                  ))}
+                </GlassCard>
+              </>
+            ) : null}
 
             <Text style={styles.sectionTitle}>Split breakdown</Text>
             <GlassCard style={styles.listCard}>

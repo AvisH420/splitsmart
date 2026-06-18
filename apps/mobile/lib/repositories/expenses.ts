@@ -4,9 +4,13 @@ import type {
   Expense,
   ExpenseCategory,
   ExpenseParticipant,
+  ExpensePayer,
   SplitType,
 } from '../types';
 import { unwrap, unwrapList } from './util';
+
+/** One payer's contribution, as passed to save_expense for multi-payer flows. */
+export type PayerInput = { userId: string; amount: number };
 
 /**
  * Input for creating or editing an expense. `participants` carries the
@@ -25,6 +29,8 @@ export type SaveExpenseInput = {
   /** Optional category; null/omitted = uncategorised. */
   category?: ExpenseCategory | null;
   participants: ComputedShare[];
+  /** 2+ entries => multi-payer; 0/1 => single payer (paidBy). */
+  payers?: PayerInput[];
 };
 
 export async function listExpenses(groupId: string): Promise<Expense[]> {
@@ -73,6 +79,32 @@ export async function listParticipantsForGroup(
   );
 }
 
+/** Payer rows for a single expense (empty for single-payer expenses). */
+export async function listPayers(expenseId: string): Promise<ExpensePayer[]> {
+  return unwrapList(
+    await supabase
+      .from('expense_payers')
+      .select('*')
+      .eq('expense_id', expenseId)
+      .order('amount', { ascending: false })
+  );
+}
+
+/** All payer rows for a group's expenses, for balance computation. */
+export async function listPayersForGroup(groupId: string): Promise<ExpensePayer[]> {
+  const expenses = await listExpenses(groupId);
+  if (expenses.length === 0) return [];
+  return unwrapList(
+    await supabase
+      .from('expense_payers')
+      .select('*')
+      .in(
+        'expense_id',
+        expenses.map((e) => e.id)
+      )
+  );
+}
+
 /**
  * Create or update an expense and its split in one transaction via the
  * save_expense RPC. The RPC validates membership and that the shares
@@ -90,6 +122,7 @@ export async function saveExpense(input: SaveExpenseInput): Promise<Expense> {
     splitType,
     category = null,
     participants,
+    payers = [],
   } = input;
 
   if (participants.length === 0) {
@@ -111,6 +144,7 @@ export async function saveExpense(input: SaveExpenseInput): Promise<Expense> {
         share_amount: p.shareAmount,
         split_value: p.splitValue,
       })),
+      p_payers: payers.map((p) => ({ user_id: p.userId, amount: p.amount })),
     })
   );
 }

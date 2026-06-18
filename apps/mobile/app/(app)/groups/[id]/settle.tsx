@@ -25,6 +25,7 @@ import { formatMoney, parseAmount } from '../../../../lib/format';
 import {
   listExpenses,
   listParticipantsForGroup,
+  listPayersForGroup,
 } from '../../../../lib/repositories/expenses';
 import { listMembers } from '../../../../lib/repositories/members';
 import {
@@ -58,14 +59,15 @@ export default function SettleScreen() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [mem, exp, parts, setl] = await Promise.all([
+      const [mem, exp, parts, setl, pyrs] = await Promise.all([
         listMembers(id),
         listExpenses(id),
         listParticipantsForGroup(id),
         listSettlements(id),
+        listPayersForGroup(id),
       ]);
       setMembers(mem);
-      const balances = computeBalances(mem, exp, parts, setl);
+      const balances = computeBalances(mem, exp, parts, setl, pyrs);
       const suggs = suggestSettlements(balances);
       setSuggestions(suggs);
 

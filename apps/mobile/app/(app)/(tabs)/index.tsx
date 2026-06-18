@@ -16,6 +16,7 @@ import { formatMoney } from '../../../lib/format';
 import {
   listExpenses,
   listParticipantsForGroup,
+  listPayersForGroup,
 } from '../../../lib/repositories/expenses';
 import { listGroups } from '../../../lib/repositories/groups';
 import { listMembers } from '../../../lib/repositories/members';
@@ -51,13 +52,14 @@ export default function GroupsScreen() {
           // user's net balance (reusing the pure computeBalances helper).
           const entries = await Promise.all(
             data.map(async (g) => {
-              const [mem, exp, parts, setl] = await Promise.all([
+              const [mem, exp, parts, setl, pyrs] = await Promise.all([
                 listMembers(g.id),
                 listExpenses(g.id),
                 listParticipantsForGroup(g.id),
                 listSettlements(g.id),
+                listPayersForGroup(g.id),
               ]);
-              const balances = computeBalances(mem, exp, parts, setl);
+              const balances = computeBalances(mem, exp, parts, setl, pyrs);
               const net = balances.find((b) => b.userId === currentUserId)?.net ?? 0;
               return [g.id, { memberCount: mem.length, net }] as const;
             })

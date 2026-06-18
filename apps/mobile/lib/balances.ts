@@ -1,6 +1,7 @@
 import type {
   Expense,
   ExpenseParticipant,
+  ExpensePayer,
   GroupMemberWithProfile,
   MemberBalance,
   Settlement,
@@ -34,7 +35,8 @@ export function computeBalances(
   members: GroupMemberWithProfile[],
   expenses: Expense[],
   participants: ExpenseParticipant[],
-  settlements: Settlement[]
+  settlements: Settlement[],
+  payers: ExpensePayer[] = []
 ): MemberBalance[] {
   const cents = new Map<string, number>();
   for (const m of members) cents.set(m.user_id, 0);
@@ -44,7 +46,23 @@ export function computeBalances(
     cents.set(userId, (cents.get(userId) ?? 0) + delta);
   };
 
-  for (const e of expenses) add(e.paid_by, toCents(e.total_amount));
+  // Group multi-payer rows by expense; an expense with payer rows credits each
+  // payer their contribution instead of crediting paid_by the full total.
+  const payersByExpense = new Map<string, ExpensePayer[]>();
+  for (const p of payers) {
+    const list = payersByExpense.get(p.expense_id);
+    if (list) list.push(p);
+    else payersByExpense.set(p.expense_id, [p]);
+  }
+
+  for (const e of expenses) {
+    const ep = payersByExpense.get(e.id);
+    if (ep && ep.length > 0) {
+      for (const p of ep) add(p.user_id, toCents(p.amount));
+    } else {
+      add(e.paid_by, toCents(e.total_amount));
+    }
+  }
   for (const p of participants) add(p.user_id, -toCents(p.share_amount));
   for (const s of settlements) {
     add(s.from_user, toCents(s.amount));

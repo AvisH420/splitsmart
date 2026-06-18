@@ -33,6 +33,7 @@ import { formatMoney } from '../../../../lib/format';
 import {
   listExpenses,
   listParticipantsForGroup,
+  listPayersForGroup,
 } from '../../../../lib/repositories/expenses';
 import { getGroup } from '../../../../lib/repositories/groups';
 import { listMembers } from '../../../../lib/repositories/members';
@@ -82,19 +83,20 @@ export default function GroupDetailScreen() {
       setError(null);
       (async () => {
         try {
-          const [g, mem, exp, parts, setl, mems] = await Promise.all([
+          const [g, mem, exp, parts, setl, pyrs, mems] = await Promise.all([
             getGroup(id),
             listMembers(id),
             listExpenses(id),
             listParticipantsForGroup(id),
             listSettlements(id),
+            listPayersForGroup(id),
             listMemories(id),
           ]);
           if (!active) return;
           setGroup(g);
           setMembers(mem);
           setExpenses(exp);
-          setBalances(computeBalances(mem, exp, parts, setl));
+          setBalances(computeBalances(mem, exp, parts, setl, pyrs));
           setMemories(mems);
         } catch (e) {
           if (active) setError((e as Error).message);

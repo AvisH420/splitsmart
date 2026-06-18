@@ -25,6 +25,7 @@ import { formatMoney, parseAmount } from '../../../../lib/format';
 import {
   getExpense,
   listParticipants,
+  listPayers,
   saveExpense,
 } from '../../../../lib/repositories/expenses';
 import { listMembers } from '../../../../lib/repositories/members';
@@ -73,6 +74,9 @@ export default function ExpenseFormScreen() {
   const [participants, setParticipants] = useState<Set<string>>(new Set());
   /** Per-member raw split inputs (exact amount / percent / share weight). */
   const [values, setValues] = useState<Record<string, string>>({});
+  const [multiPayers, setMultiPayers] = useState(false);
+  /** Per-member paid amount when in multi-payer mode. */
+  const [payerAmounts, setPayerAmounts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -83,9 +87,10 @@ export default function ExpenseFormScreen() {
         setMembers(mem);
 
         if (isEdit && expenseId) {
-          const [exp, parts] = await Promise.all([
+          const [exp, parts, payerRows] = await Promise.all([
             getExpense(expenseId),
             listParticipants(expenseId),
+            listPayers(expenseId),
           ]);
           setTitle(exp.title);
           setAmountText(String(exp.total_amount));
@@ -98,6 +103,13 @@ export default function ExpenseFormScreen() {
             if (p.split_value != null) v[p.user_id] = String(p.split_value);
           }
           setValues(v);
+          // Multi-payer expense: hydrate the per-payer amounts.
+          if (payerRows.length > 0) {
+            setMultiPayers(true);
+            const pa: Record<string, string> = {};
+            for (const pr of payerRows) pa[pr.user_id] = String(pr.amount);
+            setPayerAmounts(pa);
+          }
         } else if (prefill) {
           // Hydrate from an AI-parsed expense handed off by the assistant.
           try {
@@ -185,12 +197,33 @@ export default function ExpenseFormScreen() {
   const setValue = (userId: string, text: string) =>
     setValues((prev) => ({ ...prev, [userId]: text }));
 
+  const setPayerAmount = (userId: string, text: string) =>
+    setPayerAmounts((prev) => ({ ...prev, [userId]: text }));
+
+  // Multi-payer: collect members with a positive amount.
+  const payerEntries = useMemo(
+    () =>
+      members
+        .map((m) => ({ userId: m.user_id, amount: parseValue(payerAmounts[m.user_id]) }))
+        .filter((e) => e.amount > 0),
+    [members, payerAmounts]
+  );
+  const payerTotalCents = payerEntries.reduce(
+    (a, e) => a + Math.round(e.amount * 100),
+    0
+  );
+  const amountCents = amount != null ? Math.round(amount * 100) : null;
+  const payersBalanced =
+    amountCents != null && payerTotalCents === amountCents && payerEntries.length >= 2;
+  const payersValid = !multiPayers || payersBalanced;
+
   const canSubmit =
     !!title.trim() &&
     amount != null &&
     !!paidBy &&
     participantIds.length > 0 &&
     !splitError &&
+    payersValid &&
     !submitting;
 
   const onSubmit = async () => {
@@ -201,12 +234,13 @@ export default function ExpenseFormScreen() {
       await saveExpense({
         expenseId: isEdit ? expenseId : null,
         groupId: id,
-        paidBy,
+        paidBy: multiPayers ? payerEntries[0].userId : paidBy,
         title,
         totalAmount: amount,
         splitType,
         category,
         participants: computeSplit(splitType, amount, inputs),
+        payers: multiPayers ? payerEntries : undefined,
       });
       router.back();
     } catch (e) {
@@ -256,17 +290,69 @@ export default function ExpenseFormScreen() {
                   keyboardType="decimal-pad"
                 />
 
-                <Text style={styles.label}>Paid by</Text>
-                <View style={styles.chips}>
-                  {members.map((m) => (
-                    <Chip
-                      key={m.user_id}
-                      label={m.profile.display_name}
-                      active={paidBy === m.user_id}
-                      onPress={() => setPaidBy(m.user_id)}
-                    />
-                  ))}
+                <View style={styles.payerHeader}>
+                  <Text style={styles.label}>Paid by</Text>
+                  <Pressable
+                    style={styles.toggleRow}
+                    onPress={() => setMultiPayers((v) => !v)}
+                  >
+                    <Text style={styles.toggleLabel}>Multiple payers</Text>
+                    <View style={[styles.toggle, multiPayers && styles.toggleOn]}>
+                      <View style={[styles.toggleKnob, multiPayers && styles.toggleKnobOn]} />
+                    </View>
+                  </Pressable>
                 </View>
+
+                {multiPayers ? (
+                  <View style={styles.memberList}>
+                    {members.map((m) => (
+                      <View key={m.user_id} style={styles.memberRow}>
+                        <Avatar
+                          name={m.profile.display_name}
+                          uri={m.profile.avatar_url}
+                          size={28}
+                        />
+                        <Text style={[styles.memberName, styles.payerName]}>
+                          {m.profile.display_name}
+                        </Text>
+                        <Input
+                          placeholder="0.00"
+                          value={payerAmounts[m.user_id] ?? ''}
+                          onChangeText={(text) => setPayerAmount(m.user_id, text)}
+                          keyboardType="decimal-pad"
+                          style={styles.valueInput}
+                        />
+                      </View>
+                    ))}
+                    <Text
+                      style={[
+                        styles.allocated,
+                        payersBalanced ? styles.allocatedOk : styles.allocatedBad,
+                      ]}
+                    >
+                      {formatMoney(payerTotalCents / 100)} of {formatMoney(amount ?? 0)}{' '}
+                      allocated
+                    </Text>
+                    {!payersBalanced ? (
+                      <Text style={styles.warn}>
+                        {payerEntries.length < 2
+                          ? 'Add at least two payers.'
+                          : 'Payer amounts must add up to the total.'}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : (
+                  <View style={styles.chips}>
+                    {members.map((m) => (
+                      <Chip
+                        key={m.user_id}
+                        label={m.profile.display_name}
+                        active={paidBy === m.user_id}
+                        onPress={() => setPaidBy(m.user_id)}
+                      />
+                    ))}
+                  </View>
+                )}
 
                 <Text style={styles.label}>Category</Text>
                 <ScrollView
@@ -458,7 +544,39 @@ const makeStyles = (t: Theme) =>
     fontSize: t.typography.sizes.base,
     color: t.colors.textPrimary,
   },
-  valueInput: { width: 76, textAlign: 'right' },
+  payerName: { flex: 1 },
+  valueInput: { width: 96, textAlign: 'right' },
+  payerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm },
+  toggleLabel: { fontSize: t.typography.sizes.sm, color: t.colors.textSecondary },
+  toggle: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: t.colors.surfaceBorder,
+    padding: 3,
+    justifyContent: 'center',
+  },
+  toggleOn: { backgroundColor: t.colors.accent },
+  toggleKnob: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: t.colors.white,
+    alignSelf: 'flex-start',
+  },
+  toggleKnobOn: { alignSelf: 'flex-end' },
+  allocated: {
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.semibold,
+    marginTop: t.spacing.xs,
+  },
+  allocatedOk: { color: t.colors.positive },
+  allocatedBad: { color: t.colors.negative },
   share: {
     fontSize: t.typography.sizes.base,
     color: t.colors.textSecondary,
