@@ -1,13 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Share,
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {
   getPendingInvitation,
@@ -48,39 +51,46 @@ export default function InviteMemberScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.label}>Invite by email</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="friend@example.com"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        autoComplete="email"
-        autoFocus
-        returnKeyType="done"
-        onSubmitEditing={() => email.trim() && onInvite()}
-      />
-      <Text style={styles.hint}>
-        If they already have a SplitSmart account they’ll be added right away.
-        Otherwise we’ll create an invite link for you to share.
-      </Text>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.label}>Invite by email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="friend@example.com"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+            returnKeyType="done"
+            onSubmitEditing={() => email.trim() && onInvite()}
+          />
+          <Text style={styles.hint}>
+            If they already have a SplitSmart account they’ll be added right away.
+            Otherwise we’ll create an invite link for you to share.
+          </Text>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Pressable
-        style={[styles.button, (submitting || !email.trim()) && styles.buttonDisabled]}
-        onPress={onInvite}
-        disabled={submitting || !email.trim()}
-      >
-        <Text style={styles.buttonText}>{submitting ? 'Inviting…' : 'Invite'}</Text>
-      </Pressable>
+          <Pressable
+            style={[styles.button, (submitting || !email.trim()) && styles.buttonDisabled]}
+            onPress={onInvite}
+            disabled={submitting || !email.trim()}
+          >
+            <Text style={styles.buttonText}>{submitting ? 'Inviting…' : 'Invite'}</Text>
+          </Pressable>
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 8, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#fff' },
+  content: { padding: 24, gap: 8 },
   label: { fontSize: 14, color: '#666' },
   input: {
     borderWidth: 1,

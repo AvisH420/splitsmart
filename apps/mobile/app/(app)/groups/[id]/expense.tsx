@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useAuth } from '../../../../lib/auth-context';
@@ -224,6 +226,7 @@ export default function ExpenseFormScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Stack.Screen options={{ title: isEdit ? 'Edit Expense' : 'New Expense' }} />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.label}>Description</Text>
         <TextInput
@@ -231,7 +234,6 @@ export default function ExpenseFormScreen() {
           placeholder="e.g. Dinner"
           value={title}
           onChangeText={setTitle}
-          autoFocus={!isEdit}
         />
 
         <Text style={styles.label}>Amount</Text>
@@ -358,6 +360,7 @@ export default function ExpenseFormScreen() {
           </Text>
         </Pressable>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

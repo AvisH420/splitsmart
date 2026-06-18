@@ -1,12 +1,15 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { createGroup } from '../../../lib/repositories/groups';
@@ -35,34 +38,41 @@ export default function NewGroupScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.label}>Group name</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g. Goa Trip"
-        value={name}
-        onChangeText={setName}
-        autoFocus
-        returnKeyType="done"
-        onSubmitEditing={() => name.trim() && onCreate()}
-      />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.label}>Group name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Goa Trip"
+            value={name}
+            onChangeText={setName}
+            returnKeyType="done"
+            onSubmitEditing={() => name.trim() && onCreate()}
+          />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Pressable
-        style={[styles.button, (submitting || !name.trim()) && styles.buttonDisabled]}
-        onPress={onCreate}
-        disabled={submitting || !name.trim()}
-      >
-        <Text style={styles.buttonText}>
-          {submitting ? 'Creating…' : 'Create group'}
-        </Text>
-      </Pressable>
+          <Pressable
+            style={[styles.button, (submitting || !name.trim()) && styles.buttonDisabled]}
+            onPress={onCreate}
+            disabled={submitting || !name.trim()}
+          >
+            <Text style={styles.buttonText}>
+              {submitting ? 'Creating…' : 'Create group'}
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 10, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#fff' },
+  content: { padding: 24, gap: 10 },
   label: { fontSize: 14, color: '#666' },
   input: {
     borderWidth: 1,

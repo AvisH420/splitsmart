@@ -1,12 +1,15 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
@@ -49,6 +52,11 @@ export default function SignupScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
       <View style={styles.form}>
         <Text style={styles.title}>Create account</Text>
 
@@ -94,12 +102,15 @@ export default function SignupScreen() {
           Already have an account? Sign in
         </Link>
       </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24 },
+  container: { flex: 1 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   form: { gap: 12 },
   title: { fontSize: 28, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
   input: {

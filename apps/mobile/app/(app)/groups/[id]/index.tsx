@@ -8,11 +8,13 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { Avatar } from '../../../../lib/components/Avatar';
@@ -127,7 +129,12 @@ export default function GroupDetailScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <Stack.Screen
         options={{
           title: group?.name ?? 'Group',
@@ -317,6 +324,7 @@ export default function GroupDetailScreen() {
         </>
       )}
     </ScrollView>
+    </TouchableWithoutFeedback>
   );
 }
 
