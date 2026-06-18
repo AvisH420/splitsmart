@@ -3,8 +3,8 @@ import type { SplitType } from './types';
 
 /**
  * Pure split math. Given a total, a split type, and per-participant inputs,
- * resolve the currency `shareAmount` each person owes — always summing
- * exactly to the total in integer cents — plus the raw `splitValue` to
+ * resolve the currency `shareAmount` each person owes - always summing
+ * exactly to the total in integer cents - plus the raw `splitValue` to
  * persist so the edit form can be re-hydrated later.
  *
  * No I/O here: screens compute the split, validate it, then hand the result

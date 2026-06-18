@@ -120,7 +120,7 @@ export default function ProfileScreen() {
                   <Avatar name={name} uri={avatarUrl} size={104} />
                   <Pressable onPress={onChangePhoto} disabled={uploading} hitSlop={8}>
                     <Text style={styles.changePhoto}>
-                      {uploading ? 'Uploading…' : 'Change photo'}
+                      {uploading ? 'Uploading...' : 'Change photo'}
                     </Text>
                   </Pressable>
                 </View>
@@ -138,7 +138,7 @@ export default function ProfileScreen() {
 
                 <View style={styles.readonlyBlock}>
                   <Text style={styles.readonlyLabel}>Email</Text>
-                  <Text style={styles.readonlyValue}>{profile?.email ?? '—'}</Text>
+                  <Text style={styles.readonlyValue}>{profile?.email ?? '-'}</Text>
                 </View>
 
                 {error ? <Text style={styles.error}>{error}</Text> : null}

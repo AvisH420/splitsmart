@@ -2,7 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import { Animated, Pressable, type ViewStyle } from 'react-native';
 
 /**
- * A Pressable whose content springs down slightly on press — the standard
+ * A Pressable whose content springs down slightly on press - the standard
  * tactile feedback for cards and rows across the app.
  */
 export function PressableScale({

@@ -1,6 +1,6 @@
 /**
  * The single source of truth for the app's visual design. Every screen and
- * component imports from here — no hardcoded colors, font sizes, spacing or
+ * component imports from here - no hardcoded colors, font sizes, spacing or
  * radii anywhere else in the codebase.
  */
 export const theme = {
@@ -41,7 +41,7 @@ export const theme = {
     white: '#FFFFFF',
   },
   typography: {
-    // Use system font (SF Pro on iOS) — no custom fonts needed
+    // Use system font (SF Pro on iOS) - no custom fonts needed
     sizes: {
       xs: 11,
       sm: 13,

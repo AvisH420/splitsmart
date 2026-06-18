@@ -4,13 +4,13 @@ import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import { acceptInvitation } from './repositories/invitations';
 
-/** Build a shareable invite deep link for a token, e.g. splitsmart://invite?token=… */
+/** Build a shareable invite deep link for a token, e.g. splitsmart://invite?token=... */
 export function inviteUrl(token: string): string {
   return Linking.createURL('invite', { queryParams: { token } });
 }
 
 /**
- * Handle incoming `…/invite?token=…` deep links: accept the invitation and
+ * Handle incoming `.../invite?token=...` deep links: accept the invitation and
  * navigate into the joined group. Mounted inside the authenticated tree, so a
  * cold-start link opened while signed-out is processed once the user has
  * logged in and this tree mounts (getInitialURL still returns that link).

@@ -19,7 +19,7 @@ function describe(item: ActivityItem): { name: string; text: string; amount?: st
     case 'expense':
       return {
         name: item.payerName,
-        text: `${item.payerName} added “${item.title}”${item.edited ? ' (edited)' : ''}`,
+        text: `${item.payerName} added "${item.title}"${item.edited ? ' (edited)' : ''}`,
         amount: formatMoney(item.amount, item.currency),
       };
     case 'settlement':
@@ -105,7 +105,7 @@ export default function GlobalActivityScreen() {
                   <View style={styles.body}>
                     <Text style={styles.text}>{d.text}</Text>
                     <Text style={styles.meta}>
-                      {item.groupName} · {new Date(item.at).toLocaleDateString()}
+                      {item.groupName} - {new Date(item.at).toLocaleDateString()}
                     </Text>
                   </View>
                   {d.amount ? <Text style={styles.amount}>{d.amount}</Text> : null}

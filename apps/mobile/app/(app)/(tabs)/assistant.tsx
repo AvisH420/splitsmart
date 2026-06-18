@@ -293,7 +293,7 @@ export default function AssistantScreen() {
                     <GlassCard style={styles.bubble}>
                       <View style={styles.bubbleHead}>
                         <Feather name="zap" size={16} color={theme.colors.accent} />
-                        <Text style={styles.bubbleHeadText}>Here’s what I understood</Text>
+                        <Text style={styles.bubbleHeadText}>Here's what I understood</Text>
                       </View>
                       <View style={styles.bubbleTop}>
                         <Text style={styles.bubbleTitle}>{parsed.title}</Text>
@@ -302,8 +302,8 @@ export default function AssistantScreen() {
                         </Text>
                       </View>
                       <Text style={styles.bubbleMeta}>
-                        {nameFor(parsed.paid_by)} paid · split {parsed.split_type}
-                        {parsed.category ? ` · ${categoryLabel(parsed.category)}` : ''} ·{' '}
+                        {nameFor(parsed.paid_by)} paid - split {parsed.split_type}
+                        {parsed.category ? ` - ${categoryLabel(parsed.category)}` : ''} -{' '}
                         {parsed.confidence} confidence
                       </Text>
 
@@ -337,7 +337,7 @@ export default function AssistantScreen() {
                     <Text style={styles.sectionTitle}>Group memory</Text>
                   </View>
                   <Text style={styles.sectionHint}>
-                    Things the assistant remembers about this group — used to improve
+                    Things the assistant remembers about this group - used to improve
                     parsing and receipt splits.
                   </Text>
 

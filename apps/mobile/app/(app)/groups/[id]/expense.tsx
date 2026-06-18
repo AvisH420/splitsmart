@@ -215,8 +215,8 @@ export default function ExpenseFormScreen() {
 
   const splitHint: Record<SplitType, string> = {
     equal: 'Split equally between everyone selected',
-    exact: 'Enter each person’s exact amount',
-    percentage: 'Enter each person’s percentage',
+    exact: 'Enter an exact amount for each person',
+    percentage: 'Enter a percentage for each person',
     shares: 'Assign shares to each person',
   };
 

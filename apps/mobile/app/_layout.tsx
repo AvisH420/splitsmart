@@ -17,7 +17,7 @@ Notifications.setNotificationHandler({
 /**
  * Declares the protected route tree. `Stack.Protected` only mounts a
  * group while its `guard` is true and, when the guard is false, redirects
- * away from it — so the signed-in/signed-out split is enforced by the
+ * away from it - so the signed-in/signed-out split is enforced by the
  * router itself (including deep links), with no manual navigation.
  *
  * While the persisted session is still being restored we show a spinner

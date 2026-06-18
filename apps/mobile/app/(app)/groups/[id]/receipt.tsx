@@ -254,7 +254,7 @@ export default function ReceiptScreen() {
             {parsing ? (
               <View style={styles.loading}>
                 <ActivityIndicator size="large" color={theme.colors.accent} />
-                <Text style={styles.loadingText}>Reading your receipt…</Text>
+                <Text style={styles.loadingText}>Reading your receipt...</Text>
               </View>
             ) : null}
 
@@ -265,7 +265,7 @@ export default function ReceiptScreen() {
                 <GlassCard style={styles.headerCard}>
                   <Text style={styles.restaurant}>{parsed.restaurant_name || 'Receipt'}</Text>
                   <Text style={styles.totalNote}>
-                    {formatMoney(parsed.total_amount, parsed.currency)} · {parsed.confidence} confidence
+                    {formatMoney(parsed.total_amount, parsed.currency)} - {parsed.confidence} confidence
                   </Text>
                 </GlassCard>
 

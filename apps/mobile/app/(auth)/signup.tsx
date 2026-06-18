@@ -91,7 +91,7 @@ export default function SignupScreen() {
               {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
               <Button
-                title={submitting ? 'Creating account…' : 'Create account'}
+                title={submitting ? 'Creating account...' : 'Create account'}
                 onPress={onSignUp}
                 loading={submitting}
                 disabled={!displayName || !email || password.length < 6}

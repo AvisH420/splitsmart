@@ -37,7 +37,7 @@ export async function updateProfile(
  * second upload replaces the first.
  *
  * A cache-busting query param is appended to the stored URL because the
- * object name never changes — without it, React Native's image cache would
+ * object name never changes - without it, React Native's image cache would
  * keep showing the old photo.
  */
 export async function uploadAvatar(

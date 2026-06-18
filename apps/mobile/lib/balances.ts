@@ -18,7 +18,7 @@ function fromCents(cents: number): number {
 
 /**
  * Compute each member's net balance purely from expenses, their splits,
- * and recorded settlements — nothing is read from a stored balance.
+ * and recorded settlements - nothing is read from a stored balance.
  *
  *   net(u) =  sum(expenses u paid)
  *           - sum(u's shares of expenses)

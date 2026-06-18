@@ -143,7 +143,7 @@ export default function ExpenseDetailScreen() {
               </Text>
               <Text style={styles.title}>{expense.title}</Text>
               <Text style={styles.meta}>
-                {nameFor(expense.paid_by)} paid · {SPLIT_LABEL[expense.split_type]}
+                {nameFor(expense.paid_by)} paid - {SPLIT_LABEL[expense.split_type]}
               </Text>
               {expense.category ? (
                 <View style={styles.badge}>
@@ -152,7 +152,7 @@ export default function ExpenseDetailScreen() {
               ) : null}
               <Text style={styles.date}>
                 {new Date(expense.created_at).toLocaleString()}
-                {expense.updated_at !== expense.created_at ? ' · edited' : ''}
+                {expense.updated_at !== expense.created_at ? ' - edited' : ''}
               </Text>
             </GlassCard>
 
@@ -182,7 +182,7 @@ export default function ExpenseDetailScreen() {
             >
               <Feather name="trash-2" size={16} color={theme.colors.negative} />
               <Text style={styles.deleteText}>
-                {deleting ? 'Deleting…' : 'Delete expense'}
+                {deleting ? 'Deleting...' : 'Delete expense'}
               </Text>
             </Pressable>
           </ScrollView>

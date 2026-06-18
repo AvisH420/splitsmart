@@ -75,7 +75,7 @@ export default function LoginScreen() {
               {error ? <Text style={styles.error}>{error}</Text> : null}
 
               <Button
-                title={submitting ? 'Signing in…' : 'Sign in'}
+                title={submitting ? 'Signing in...' : 'Sign in'}
                 onPress={onSignIn}
                 loading={submitting}
                 disabled={!email || !password}

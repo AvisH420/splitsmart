@@ -15,7 +15,7 @@ function describe(item: ActivityItem): { name: string; text: string; amount?: st
     case 'expense':
       return {
         name: item.payerName,
-        text: `${item.payerName} added “${item.title}”${item.edited ? ' (edited)' : ''}`,
+        text: `${item.payerName} added "${item.title}"${item.edited ? ' (edited)' : ''}`,
         amount: formatMoney(item.amount, item.currency),
       };
     case 'settlement':

@@ -61,7 +61,7 @@ export default function NewGroupScreen() {
             disabled={submitting || !name.trim()}
           >
             <Text style={styles.buttonText}>
-              {submitting ? 'Creating…' : 'Create group'}
+              {submitting ? 'Creating...' : 'Create group'}
             </Text>
           </Pressable>
         </ScrollView>

@@ -76,8 +76,8 @@ export default function InviteMemberScreen() {
                 onSubmitEditing={() => email.trim() && onInvite()}
               />
               <Text style={styles.hint}>
-                If they already have a SplitSmart account they’ll be added right
-                away. Otherwise we’ll create an invite link for you to share.
+                If they already have a SplitSmart account they'll be added right
+                away. Otherwise we'll create an invite link for you to share.
               </Text>
 
               {error ? <Text style={styles.error}>{error}</Text> : null}

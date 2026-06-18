@@ -7,7 +7,7 @@ import { unwrap, unwrapList } from './util';
  *   'added'   -> the email already had an account; they joined immediately.
  *   'invited' -> no account yet; a pending invitation row was created.
  * (SECURITY DEFINER server-side, because RLS hides profiles you don't already
- * share a group with — see the migration.)
+ * share a group with - see the migration.)
  */
 export async function inviteToGroup(
   groupId: string,
@@ -24,7 +24,7 @@ export async function inviteToGroup(
 
 /**
  * Accept an invitation by its token: joins the caller to the group and marks
- * the invitation accepted. Returns the joined group's id. SECURITY INVOKER —
+ * the invitation accepted. Returns the joined group's id. SECURITY INVOKER -
  * RLS (widened for invitees) is what authorises the join.
  */
 export async function acceptInvitation(token: string): Promise<string> {

@@ -4,8 +4,8 @@ import { listSettlements } from './settlements';
 import type { ActivityItem } from '../types';
 
 /**
- * Build a group's activity feed by merging the things already stored —
- * expenses, settlements and member joins — into one reverse-chronological
+ * Build a group's activity feed by merging the things already stored -
+ * expenses, settlements and member joins - into one reverse-chronological
  * list. No dedicated activity table: the feed is derived at read time, the
  * same philosophy as balances. (Deleted expenses naturally disappear from
  * the feed; an edit shows via the `edited` flag.)

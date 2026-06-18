@@ -9,7 +9,7 @@ import { upsertPushToken } from './repositories/notifications';
 /**
  * Registers the device for push notifications once the user is authenticated,
  * stores the Expo push token, and deep-links to the relevant group when a
- * notification is tapped. Safe to call unconditionally — it no-ops until a
+ * notification is tapped. Safe to call unconditionally - it no-ops until a
  * session exists and swallows the errors that occur on simulators / when no
  * EAS projectId is configured (push tokens require a real device + project).
  */
@@ -50,7 +50,7 @@ export function usePushNotifications() {
         );
         await upsertPushToken(userId, tokenResponse.data);
       } catch (e) {
-        // Expected on simulators / without an EAS projectId — non-fatal.
+        // Expected on simulators / without an EAS projectId - non-fatal.
         console.warn('Push registration skipped:', (e as Error).message);
       }
     })();

@@ -7,7 +7,7 @@ import type {
 } from '../types';
 
 /**
- * All calls to the AI Edge Functions live here — screens never invoke
+ * All calls to the AI Edge Functions live here - screens never invoke
  * functions directly. supabase.functions.invoke attaches the signed-in user's
  * JWT automatically, so each function runs under that user's RLS context.
  */

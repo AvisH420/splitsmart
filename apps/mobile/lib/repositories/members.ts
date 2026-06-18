@@ -8,7 +8,7 @@ import { unwrap, unwrapList } from './util';
  * Done as two queries (members, then their profiles) rather than a PostgREST
  * embed: the embed needs FK-relationship metadata in the generated Database
  * type, which our hand-authored types don't declare. RLS makes both reads
- * safe — co-members' profiles are visible via profiles_select_visible.
+ * safe - co-members' profiles are visible via profiles_select_visible.
  */
 export async function listMembers(groupId: string): Promise<GroupMemberWithProfile[]> {
   const members = unwrapList(
