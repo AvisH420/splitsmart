@@ -1,18 +1,21 @@
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
-  View,
 } from 'react-native';
+import { AnimatedScreen } from '../../../lib/components/AnimatedScreen';
+import { Button } from '../../../lib/components/Button';
+import { GradientBackground } from '../../../lib/components/GradientBackground';
+import { Input } from '../../../lib/components/Input';
+import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { createGroup } from '../../../lib/repositories/groups';
+import { theme } from '../../../lib/theme';
 
 export default function NewGroupScreen() {
   const router = useRouter();
@@ -25,7 +28,6 @@ export default function NewGroupScreen() {
     setError(null);
     try {
       const group = await createGroup(name);
-      // Replace the modal with the new group's detail screen.
       router.replace(`/groups/${group.id}`);
     } catch (e) {
       setError((e as Error).message);
@@ -34,62 +36,52 @@ export default function NewGroupScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
+    <GradientBackground>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader title="New group" onBack={() => router.back()} />
+      <AnimatedScreen>
+        <KeyboardAvoidingView
+          style={styles.fill}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <Text style={styles.label}>Group name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Goa Trip"
-            value={name}
-            onChangeText={setName}
-            returnKeyType="done"
-            onSubmitEditing={() => name.trim() && onCreate()}
-          />
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <ScrollView
+              contentContainerStyle={styles.content}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Input
+                label="Group name"
+                placeholder="e.g. Goa Trip"
+                value={name}
+                onChangeText={setName}
+                returnKeyType="done"
+                onSubmitEditing={() => name.trim() && onCreate()}
+              />
+              <Text style={styles.hint}>
+                You can invite people once the group is created.
+              </Text>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Pressable
-            style={[styles.button, (submitting || !name.trim()) && styles.buttonDisabled]}
-            onPress={onCreate}
-            disabled={submitting || !name.trim()}
-          >
-            <Text style={styles.buttonText}>
-              {submitting ? 'Creating...' : 'Create group'}
-            </Text>
-          </Pressable>
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+              <Button
+                title="Create group"
+                onPress={onCreate}
+                loading={submitting}
+                disabled={!name.trim()}
+                style={styles.submit}
+              />
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </AnimatedScreen>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, gap: 10 },
-  label: { fontSize: 14, color: '#666' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  error: { color: '#c0392b', fontSize: 14 },
-  button: {
-    backgroundColor: '#1d9e75',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  fill: { flex: 1 },
+  content: { padding: theme.spacing.xl, gap: theme.spacing.md },
+  hint: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
+  submit: { marginTop: theme.spacing.sm },
 });

@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -43,6 +43,7 @@ export default function SettleScreen() {
   const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
   const [suggestions, setSuggestions] = useState<SettlementSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // A settlement is from payer -> receiver, logged by the current user.
@@ -51,36 +52,41 @@ export default function SettleScreen() {
   const [amountText, setAmountText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [mem, exp, parts, setl] = await Promise.all([
-          listMembers(id),
-          listExpenses(id),
-          listParticipantsForGroup(id),
-          listSettlements(id),
-        ]);
-        setMembers(mem);
-        const balances = computeBalances(mem, exp, parts, setl);
-        const suggs = suggestSettlements(balances);
-        setSuggestions(suggs);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [mem, exp, parts, setl] = await Promise.all([
+        listMembers(id),
+        listExpenses(id),
+        listParticipantsForGroup(id),
+        listSettlements(id),
+      ]);
+      setMembers(mem);
+      const balances = computeBalances(mem, exp, parts, setl);
+      const suggs = suggestSettlements(balances);
+      setSuggestions(suggs);
 
-        const mine = suggs.find((s) => s.fromUserId === currentUserId) ?? suggs[0];
-        if (mine) {
-          setFromUser(mine.fromUserId);
-          setToUser(mine.toUserId);
-          setAmountText(String(mine.amount));
-        } else if (!fromUser && mem[0]) {
-          setFromUser(mem[0].user_id);
-        }
-      } catch (e) {
-        setError((e as Error).message);
-      } finally {
-        setLoading(false);
+      const mine = suggs.find((s) => s.fromUserId === currentUserId) ?? suggs[0];
+      if (mine) {
+        setFromUser(mine.fromUserId);
+        setToUser(mine.toUserId);
+        setAmountText(String(mine.amount));
+      } else if (mem[0]) {
+        setFromUser((prev) => prev ?? mem[0].user_id);
       }
-    })();
+    } catch (e) {
+      // Surface the failure instead of spinning forever.
+      setLoadError((e as Error).message || 'Could not load this group.');
+    } finally {
+      setLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const amount = parseAmount(amountText);
   const receivers = members.filter((m) => m.user_id !== fromUser);
@@ -143,6 +149,16 @@ export default function SettleScreen() {
       <ScreenHeader title="Settle up" onBack={() => router.back()} />
       {loading ? (
         <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+      ) : loadError ? (
+        <AnimatedScreen>
+          <ScrollView contentContainerStyle={styles.content}>
+            <GlassCard style={styles.errorCard}>
+              <Text style={styles.errorTitle}>Could not load balances</Text>
+              <Text style={styles.errorBody}>{loadError}</Text>
+              <Button title="Try again" onPress={load} style={styles.errorButton} />
+            </GlassCard>
+          </ScrollView>
+        </AnimatedScreen>
       ) : (
         <AnimatedScreen>
           <KeyboardAvoidingView
@@ -270,4 +286,17 @@ const styles = StyleSheet.create({
   amountInput: { marginTop: theme.spacing.sm },
   error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm, marginTop: theme.spacing.xs },
   submit: { marginTop: theme.spacing.md },
+  errorCard: { padding: theme.spacing.xl, gap: theme.spacing.sm, alignItems: 'center' },
+  errorTitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+  },
+  errorBody: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  errorButton: { marginTop: theme.spacing.sm, alignSelf: 'stretch' },
 });
+

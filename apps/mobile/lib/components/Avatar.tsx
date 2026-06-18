@@ -1,9 +1,9 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { theme } from '../theme';
 
 /**
  * Circular avatar: shows the profile photo when `uri` is set, otherwise the
- * person's initials on a tinted circle. Used anywhere a member is named
- * (member list, expense detail, activity feed, profile screen).
+ * person's initials on a tinted circle. Used anywhere a member is named.
  */
 export function Avatar({
   name,
@@ -22,9 +22,7 @@ export function Avatar({
 
   return (
     <View style={[styles.fallback, dimension]}>
-      <Text style={[styles.initials, { fontSize: size * 0.4 }]}>
-        {initials(name)}
-      </Text>
+      <Text style={[styles.initials, { fontSize: size * 0.4 }]}>{initials(name)}</Text>
     </View>
   );
 }
@@ -38,11 +36,11 @@ function initials(name: string): string {
 }
 
 const styles = StyleSheet.create({
-  image: { backgroundColor: '#eee' },
+  image: { backgroundColor: theme.colors.accentSubtle },
   fallback: {
-    backgroundColor: '#cce8dd',
+    backgroundColor: theme.colors.accentSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  initials: { color: '#1d9e75', fontWeight: '700' },
+  initials: { color: theme.colors.accent, fontWeight: '700' },
 });

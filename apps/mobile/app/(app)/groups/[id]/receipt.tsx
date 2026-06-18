@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -66,14 +66,21 @@ export default function ReceiptScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load members exactly once for this screen. Guarding with a ref avoids any
+  // chance of re-fetching (and resetting picked state) when the component
+  // re-renders or currentUserId resolves a tick later.
+  const loadedRef = useRef(false);
   useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
     listMembers(id)
       .then((mem) => {
         setMembers(mem);
         if (!currentUserId && mem[0]) setPaidBy(mem[0].user_id);
       })
       .catch((e) => setError((e as Error).message));
-  }, [id, currentUserId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const nameFor = (userId: string) =>
     members.find((m) => m.user_id === userId)?.profile.display_name ?? 'Someone';
