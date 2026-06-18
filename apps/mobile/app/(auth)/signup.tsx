@@ -1,20 +1,23 @@
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
-  View,
 } from 'react-native';
+import { Button } from '../../lib/components/Button';
+import { GlassCard } from '../../lib/components/GlassCard';
+import { GradientBackground } from '../../lib/components/GradientBackground';
+import { Input } from '../../lib/components/Input';
 import { supabase } from '../../lib/supabase';
+import { theme } from '../../lib/theme';
 
 export default function SignupScreen() {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,89 +51,83 @@ export default function SignupScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-      <View style={styles.form}>
-        <Text style={styles.title}>Create account</Text>
+    <GradientBackground>
+      <KeyboardAvoidingView
+        style={styles.fill}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.title}>Create account</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Display name"
-          autoComplete="name"
-          value={displayName}
-          onChangeText={setDisplayName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password (min 6 characters)"
-          autoComplete="new-password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+            <GlassCard style={styles.card}>
+              <Input
+                label="Display name"
+                autoComplete="name"
+                value={displayName}
+                onChangeText={setDisplayName}
+              />
+              <Input
+                label="Email"
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+              <Input
+                label="Password"
+                placeholder="At least 6 characters"
+                autoComplete="new-password"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+              {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-        <Pressable
-          style={[styles.button, submitting && styles.buttonDisabled]}
-          onPress={onSignUp}
-          disabled={submitting || !displayName || !email || password.length < 6}
-        >
-          <Text style={styles.buttonText}>
-            {submitting ? 'Creating account…' : 'Create account'}
-          </Text>
-        </Pressable>
+              <Button
+                title={submitting ? 'Creating account…' : 'Create account'}
+                onPress={onSignUp}
+                loading={submitting}
+                disabled={!displayName || !email || password.length < 6}
+                style={styles.submit}
+              />
+            </GlassCard>
 
-        <Link href="/login" style={styles.link}>
-          Already have an account? Sign in
-        </Link>
-      </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+            <Button
+              title="Already have an account? Sign in"
+              variant="ghost"
+              onPress={() => router.push('/login')}
+            />
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  form: { gap: 12 },
-  title: { fontSize: 28, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+  fill: { flex: 1 },
+  content: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: theme.spacing.md,
   },
-  error: { color: '#c0392b', fontSize: 14 },
-  notice: { color: '#1d9e75', fontSize: 14 },
-  button: {
-    backgroundColor: '#1d9e75',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 4,
+  title: {
+    fontSize: theme.typography.sizes.display,
+    fontWeight: theme.typography.weights.heavy,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.sm,
   },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  link: { textAlign: 'center', color: '#1d9e75', marginTop: 8, fontSize: 15 },
+  card: { padding: theme.spacing.xl, gap: theme.spacing.md },
+  submit: { marginTop: theme.spacing.sm },
+  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
+  notice: { color: theme.colors.positive, fontSize: theme.typography.sizes.sm },
 });

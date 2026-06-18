@@ -1,20 +1,24 @@
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { Button } from '../../lib/components/Button';
+import { GlassCard } from '../../lib/components/GlassCard';
+import { GradientBackground } from '../../lib/components/GradientBackground';
+import { Input } from '../../lib/components/Input';
 import { supabase } from '../../lib/supabase';
+import { theme } from '../../lib/theme';
 
 export default function LoginScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -38,82 +42,80 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-      <View style={styles.form}>
-        <Text style={styles.title}>SplitSmart</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+    <GradientBackground>
+      <KeyboardAvoidingView
+        style={styles.fill}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.title}>SplitSmart</Text>
+            <Text style={styles.subtitle}>Sign in to your account</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          autoComplete="password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+            <GlassCard style={styles.card}>
+              <Input
+                label="Email"
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+              <Input
+                label="Password"
+                autoComplete="password"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Pressable
-          style={[styles.button, submitting && styles.buttonDisabled]}
-          onPress={onSignIn}
-          disabled={submitting || !email || !password}
-        >
-          <Text style={styles.buttonText}>
-            {submitting ? 'Signing in…' : 'Sign in'}
-          </Text>
-        </Pressable>
+              <Button
+                title={submitting ? 'Signing in…' : 'Sign in'}
+                onPress={onSignIn}
+                loading={submitting}
+                disabled={!email || !password}
+                style={styles.submit}
+              />
+            </GlassCard>
 
-        <Link href="/signup" style={styles.link}>
-          New here? Create an account
-        </Link>
-      </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+            <Button
+              title="New here? Create an account"
+              variant="ghost"
+              onPress={() => router.push('/signup')}
+            />
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  form: { gap: 12 },
-  title: { fontSize: 28, fontWeight: '600', textAlign: 'center' },
-  subtitle: { fontSize: 15, color: '#666', textAlign: 'center', marginBottom: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+  fill: { flex: 1 },
+  content: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: theme.spacing.md,
   },
-  error: { color: '#c0392b', fontSize: 14 },
-  button: {
-    backgroundColor: '#1d9e75',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 4,
+  title: {
+    fontSize: theme.typography.sizes.display,
+    fontWeight: theme.typography.weights.heavy,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
   },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  link: { textAlign: 'center', color: '#1d9e75', marginTop: 8, fontSize: 15 },
+  subtitle: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  card: { padding: theme.spacing.xl, gap: theme.spacing.md },
+  submit: { marginTop: theme.spacing.sm },
+  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
 });
