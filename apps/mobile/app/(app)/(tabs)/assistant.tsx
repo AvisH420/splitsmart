@@ -13,27 +13,34 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { Avatar } from '../../lib/components/Avatar';
-import { categoryLabel } from '../../lib/categories';
-import { formatMoney } from '../../lib/format';
-import { parseExpense, searchExpenses, upsertMemory } from '../../lib/repositories/ai';
-import { saveExpense } from '../../lib/repositories/expenses';
-import { listMembers } from '../../lib/repositories/members';
-import { deleteMemory, listMemories } from '../../lib/repositories/memories';
-import { computeSplit, validateSplit, type SplitInput } from '../../lib/splits';
+import { Avatar } from '../../../lib/components/Avatar';
+import { GlassCard } from '../../../lib/components/GlassCard';
+import { GradientBackground } from '../../../lib/components/GradientBackground';
+import { ScreenHeader } from '../../../lib/components/ScreenHeader';
+import { categoryLabel } from '../../../lib/categories';
+import { formatMoney } from '../../../lib/format';
+import { parseExpense, searchExpenses, upsertMemory } from '../../../lib/repositories/ai';
+import { saveExpense } from '../../../lib/repositories/expenses';
+import { listGroups } from '../../../lib/repositories/groups';
+import { listMembers } from '../../../lib/repositories/members';
+import { deleteMemory, listMemories } from '../../../lib/repositories/memories';
+import { computeSplit, validateSplit, type SplitInput } from '../../../lib/splits';
+import { theme } from '../../../lib/theme';
 import type {
   ExpenseSearchResult,
+  Group,
   GroupMemberWithProfile,
   GroupMemory,
   ParsedExpense,
-} from '../../lib/types';
+} from '../../../lib/types';
 
 export default function AssistantScreen() {
-  const { group_id } = useLocalSearchParams<{ group_id: string }>();
+  const { group_id } = useLocalSearchParams<{ group_id?: string }>();
   const router = useRouter();
 
   const [mode, setMode] = useState<'assistant' | 'search'>('assistant');
   const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [prompt, setPrompt] = useState('');
 
   // Search tab state.
@@ -55,11 +62,18 @@ export default function AssistantScreen() {
   const [memoryError, setMemoryError] = useState<string | null>(null);
 
   const loadMemories = () =>
-    listMemories(group_id)
+    listMemories(group_id!)
       .then(setMemories)
       .catch((e) => setMemoryError((e as Error).message));
 
   useEffect(() => {
+    // When opened as a tab with no group selected, load the group picker list.
+    if (!group_id) {
+      listGroups()
+        .then(setGroups)
+        .catch((e) => setError((e as Error).message));
+      return;
+    }
     listMembers(group_id)
       .then(setMembers)
       .catch((e) => setError((e as Error).message));
@@ -101,7 +115,7 @@ export default function AssistantScreen() {
     setParsed(null);
     try {
       const result = await parseExpense(
-        group_id,
+        group_id!,
         fullPrompt,
         members.map((m) => ({ id: m.user_id, name: m.profile.display_name }))
       );
@@ -127,7 +141,7 @@ export default function AssistantScreen() {
         value: p.split_value ?? undefined,
       }));
       await saveExpense({
-        groupId: group_id,
+        groupId: group_id!,
         paidBy: parsed.paid_by,
         title: parsed.title,
         totalAmount: Math.round(parsed.total_amount * 100) / 100,
@@ -146,7 +160,7 @@ export default function AssistantScreen() {
     if (!parsed) return;
     router.push({
       pathname: '/groups/[id]/expense',
-      params: { id: group_id, prefill: JSON.stringify(parsed) },
+      params: { id: group_id!, prefill: JSON.stringify(parsed) },
     });
   };
 
@@ -156,7 +170,7 @@ export default function AssistantScreen() {
     setMemoryError(null);
     try {
       await upsertMemory({
-        groupId: group_id,
+        groupId: group_id!,
         userId: memorySubject ?? '',
         content: memoryText.trim(),
         memoryType: 'preference',
@@ -186,13 +200,32 @@ export default function AssistantScreen() {
     setSearchError(null);
     setSearchResult(null);
     try {
-      setSearchResult(await searchExpenses(group_id, searchQuery.trim()));
+      setSearchResult(await searchExpenses(group_id!, searchQuery.trim()));
     } catch (e) {
       setSearchError((e as Error).message);
     } finally {
       setSearching(false);
     }
   };
+
+  // Opened as a tab with no group context: let the user pick a group first.
+  if (!group_id) {
+    return (
+      <GradientBackground>
+        <ScreenHeader title="Assistant" />
+        <ScrollView contentContainerStyle={styles.pickerContent}>
+          <Text style={styles.pickerLabel}>Choose a group to use the assistant</Text>
+          {groups.map((g) => (
+            <Pressable key={g.id} onPress={() => router.setParams({ group_id: g.id })}>
+              <GlassCard style={styles.pickerRow}>
+                <Text style={styles.pickerName}>{g.name}</Text>
+              </GlassCard>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </GradientBackground>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -453,6 +486,21 @@ export default function AssistantScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   content: { padding: 24, gap: 10 },
+  pickerContent: {
+    padding: theme.spacing.xl,
+    gap: theme.spacing.md,
+    paddingBottom: theme.spacing.xxxl * 2,
+  },
+  pickerLabel: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+  },
+  pickerRow: { padding: theme.spacing.lg },
+  pickerName: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
+  },
   label: { fontSize: 14, color: '#666' },
   input: {
     borderWidth: 1,

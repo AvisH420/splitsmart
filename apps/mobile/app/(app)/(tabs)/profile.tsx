@@ -15,10 +15,10 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { useAuth } from '../../lib/auth-context';
-import { Avatar } from '../../lib/components/Avatar';
-import { getProfile, updateProfile, uploadAvatar } from '../../lib/repositories/profiles';
-import type { Profile } from '../../lib/types';
+import { useAuth } from '../../../lib/auth-context';
+import { Avatar } from '../../../lib/components/Avatar';
+import { getProfile, updateProfile, uploadAvatar } from '../../../lib/repositories/profiles';
+import type { Profile } from '../../../lib/types';
 
 export default function ProfileScreen() {
   const { session } = useAuth();

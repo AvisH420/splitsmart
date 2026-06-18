@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import type { ComponentProps } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -16,20 +17,11 @@ const TABS: Record<string, { label: string; icon: FeatherName }> = {
 };
 
 /**
- * Minimal shape of the props a custom expo-router / react-navigation tab bar
- * receives. Typed structurally so BottomTabBarProps is assignable to it.
- */
-type TabBarProps = {
-  state: { index: number; routes: { key: string; name: string }[] };
-  navigation: { navigate: (name: string) => void };
-};
-
-/**
  * Floating frosted-glass pill tab bar (see docs/design-references/
  * whatsapp-navbar.jpg). Active tab gets an accentSubtle pill behind its
  * icon + label; inactive tabs render in textTertiary.
  */
-export function TabBar({ state, navigation }: TabBarProps) {
+export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const routes = state.routes.filter((r) => TABS[r.name]);
 

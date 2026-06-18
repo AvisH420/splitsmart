@@ -1,13 +1,12 @@
 import { Stack } from 'expo-router';
+import { theme } from '../../lib/theme';
 import { useInviteLink } from '../../lib/use-invite-link';
 
 /**
- * Layout for the authenticated section. Headers are on here (the root
- * layout keeps its own header off) so the group/expense screens get titles
- * and a back button for free. Individual screens set their own title.
- *
- * Also the home for invite deep-link handling: this tree only mounts once the
- * user is authenticated, which is exactly when accept_invitation can run.
+ * Authenticated stack. The (tabs) group hosts the four bottom tabs (their own
+ * headers via ScreenHeader, navigator header hidden). Group-detail and modal
+ * screens push over the tabs and keep native headers until each is migrated to
+ * ScreenHeader. Also the home for invite deep-link handling.
  */
 export default function AppLayout() {
   useInviteLink();
@@ -16,14 +15,16 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         headerShown: true,
-        headerTintColor: '#1d9e75',
-        headerTitleStyle: { color: '#111' },
+        headerTintColor: theme.colors.accent,
+        headerTitleStyle: { color: theme.colors.textPrimary },
+        headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Groups' }} />
-      <Stack.Screen name="profile" options={{ title: 'Profile' }} />
-      <Stack.Screen name="assistant" options={{ title: 'AI Assistant' }} />
-      <Stack.Screen name="groups/new" options={{ title: 'New Group', presentation: 'modal' }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="groups/new"
+        options={{ title: 'New Group', presentation: 'modal' }}
+      />
       <Stack.Screen name="groups/[id]/index" options={{ title: 'Group' }} />
       <Stack.Screen
         name="groups/[id]/expense"
