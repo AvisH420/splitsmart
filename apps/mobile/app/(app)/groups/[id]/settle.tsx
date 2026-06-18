@@ -1,4 +1,5 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,12 +10,17 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useAuth } from '../../../../lib/auth-context';
 import { computeBalances, suggestSettlements } from '../../../../lib/balances';
+import { AnimatedScreen } from '../../../../lib/components/AnimatedScreen';
+import { Button } from '../../../../lib/components/Button';
+import { GlassCard } from '../../../../lib/components/GlassCard';
+import { GradientBackground } from '../../../../lib/components/GradientBackground';
+import { Input } from '../../../../lib/components/Input';
+import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import { formatMoney, parseAmount } from '../../../../lib/format';
 import {
   listExpenses,
@@ -25,6 +31,7 @@ import {
   createSettlement,
   listSettlements,
 } from '../../../../lib/repositories/settlements';
+import { theme } from '../../../../lib/theme';
 import type { GroupMemberWithProfile, SettlementSuggestion } from '../../../../lib/types';
 
 export default function SettleScreen() {
@@ -58,9 +65,7 @@ export default function SettleScreen() {
         const suggs = suggestSettlements(balances);
         setSuggestions(suggs);
 
-        // Prefill from the suggestion involving the current user, else the first.
-        const mine =
-          suggs.find((s) => s.fromUserId === currentUserId) ?? suggs[0];
+        const mine = suggs.find((s) => s.fromUserId === currentUserId) ?? suggs[0];
         if (mine) {
           setFromUser(mine.fromUserId);
           setToUser(mine.toUserId);
@@ -112,10 +117,6 @@ export default function SettleScreen() {
     setAmountText(String(s.amount));
   };
 
-  if (loading) {
-    return <ActivityIndicator style={styles.center} size="large" />;
-  }
-
   const renderChips = (
     selected: string | undefined,
     onSelect: (userId: string) => void,
@@ -128,9 +129,7 @@ export default function SettleScreen() {
           style={[styles.chip, selected === m.user_id && styles.chipActive]}
           onPress={() => onSelect(m.user_id)}
         >
-          <Text
-            style={[styles.chipText, selected === m.user_id && styles.chipTextActive]}
-          >
+          <Text style={[styles.chipText, selected === m.user_id && styles.chipTextActive]}>
             {m.profile.display_name}
           </Text>
         </Pressable>
@@ -139,112 +138,136 @@ export default function SettleScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionTitle}>Suggested payments</Text>
-        {suggestions.length === 0 ? (
-          <Text style={styles.empty}>Everyone is settled up. 🎉</Text>
-        ) : (
-          suggestions.map((s, i) => (
-            <Pressable key={i} style={styles.suggestion} onPress={() => applySuggestion(s)}>
-              <Text style={styles.suggestionText}>
-                {s.fromName} pays {s.toName}
-              </Text>
-              <Text style={styles.suggestionAmount}>{formatMoney(s.amount)}</Text>
-            </Pressable>
-          ))
-        )}
+    <GradientBackground>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader title="Settle up" onBack={() => router.back()} />
+      {loading ? (
+        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+      ) : (
+        <AnimatedScreen>
+          <KeyboardAvoidingView
+            style={styles.fill}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+              <ScrollView
+                contentContainerStyle={styles.content}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Text style={styles.sectionTitle}>Suggested payments</Text>
+                {suggestions.length === 0 ? (
+                  <GlassCard style={styles.emptyCard}>
+                    <Feather name="check-circle" size={28} color={theme.colors.positive} />
+                    <Text style={styles.emptyText}>Everyone is settled up.</Text>
+                  </GlassCard>
+                ) : (
+                  <GlassCard style={styles.listCard}>
+                    {suggestions.map((s, i) => (
+                      <Pressable
+                        key={i}
+                        style={[styles.suggestion, i > 0 && styles.divider]}
+                        onPress={() => applySuggestion(s)}
+                      >
+                        <Text style={styles.suggestionText}>
+                          {s.fromName} <Feather name="arrow-right" size={13} /> {s.toName}
+                        </Text>
+                        <Text style={styles.suggestionAmount}>{formatMoney(s.amount)}</Text>
+                      </Pressable>
+                    ))}
+                  </GlassCard>
+                )}
 
-        <Text style={[styles.sectionTitle, styles.formTitle]}>Record a payment</Text>
+                <Text style={[styles.sectionTitle, styles.formTitle]}>Record a payment</Text>
 
-        <Text style={styles.hint}>Who paid</Text>
-        {renderChips(
-          fromUser,
-          (u) => {
-            setFromUser(u);
-            if (toUser === u) setToUser(undefined);
-          },
-          members
-        )}
+                <Text style={styles.hint}>Who paid</Text>
+                {renderChips(
+                  fromUser,
+                  (u) => {
+                    setFromUser(u);
+                    if (toUser === u) setToUser(undefined);
+                  },
+                  members
+                )}
 
-        <Text style={styles.hint}>Who received</Text>
-        {renderChips(toUser, setToUser, receivers)}
+                <Text style={styles.hint}>Who received</Text>
+                {renderChips(toUser, setToUser, receivers)}
 
-        <Text style={styles.hint}>Amount</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="0.00"
-          value={amountText}
-          onChangeText={setAmountText}
-          keyboardType="decimal-pad"
-        />
+                <Input
+                  label="Amount"
+                  placeholder="0.00"
+                  value={amountText}
+                  onChangeText={setAmountText}
+                  keyboardType="decimal-pad"
+                  style={styles.amountInput}
+                />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+                {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Pressable
-          style={[styles.button, !canSubmit && styles.buttonDisabled]}
-          onPress={onRecord}
-          disabled={!canSubmit}
-        >
-          <Text style={styles.buttonText}>
-            {submitting ? 'Recording…' : 'Record payment'}
-          </Text>
-        </Pressable>
-      </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+                <Button
+                  title="Record payment"
+                  onPress={onRecord}
+                  loading={submitting}
+                  disabled={!canSubmit}
+                  style={styles.submit}
+                />
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </AnimatedScreen>
+      )}
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, gap: 8 },
+  fill: { flex: 1 },
+  content: { padding: theme.spacing.xl, gap: theme.spacing.sm, paddingBottom: theme.spacing.xxxl },
   center: { flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
-  formTitle: { marginTop: 24 },
-  empty: { color: '#999', fontSize: 15 },
+  sectionTitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
+  },
+  formTitle: { marginTop: theme.spacing.xl },
+  emptyCard: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.sm },
+  emptyText: { color: theme.colors.textSecondary, fontSize: theme.typography.sizes.base },
+  listCard: { paddingHorizontal: theme.spacing.lg },
   suggestion: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    paddingVertical: theme.spacing.md,
   },
-  suggestionText: { fontSize: 16 },
-  suggestionAmount: { fontSize: 16, fontWeight: '600', color: '#c0392b' },
-  hint: { fontSize: 14, color: '#666', marginTop: 8 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.hairline,
+  },
+  suggestionText: { fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
+  suggestionAmount: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.accent,
+  },
+  hint: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   chip: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.full,
+    paddingHorizontal: theme.spacing.md + 2,
+    paddingVertical: theme.spacing.xs + 2,
   },
-  chipActive: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
-  chipText: { fontSize: 14, color: '#333' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+  chipActive: { backgroundColor: theme.colors.accent },
+  chipText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.accent,
   },
-  error: { color: '#c0392b', fontSize: 14, marginTop: 8 },
-  button: {
-    backgroundColor: '#1d9e75',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  chipTextActive: { color: theme.colors.white },
+  amountInput: { marginTop: theme.spacing.sm },
+  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm, marginTop: theme.spacing.xs },
+  submit: { marginTop: theme.spacing.md },
 });

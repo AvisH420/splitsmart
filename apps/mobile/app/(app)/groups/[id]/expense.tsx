@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -9,12 +10,17 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useAuth } from '../../../../lib/auth-context';
 import { EXPENSE_CATEGORIES } from '../../../../lib/categories';
+import { AnimatedScreen } from '../../../../lib/components/AnimatedScreen';
+import { Avatar } from '../../../../lib/components/Avatar';
+import { Button } from '../../../../lib/components/Button';
+import { GradientBackground } from '../../../../lib/components/GradientBackground';
+import { Input } from '../../../../lib/components/Input';
+import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import { formatMoney, parseAmount } from '../../../../lib/format';
 import {
   getExpense,
@@ -23,6 +29,7 @@ import {
 } from '../../../../lib/repositories/expenses';
 import { listMembers } from '../../../../lib/repositories/members';
 import { computeSplit, validateSplit, type SplitInput } from '../../../../lib/splits';
+import { theme } from '../../../../lib/theme';
 import type {
   ExpenseCategory,
   GroupMemberWithProfile,
@@ -140,9 +147,7 @@ export default function ExpenseFormScreen() {
     [participantIds, values]
   );
 
-  // Live preview of resolved shares, only when the split is valid.
-  const splitError =
-    amount != null ? validateSplit(splitType, amount, inputs) : null;
+  const splitError = amount != null ? validateSplit(splitType, amount, inputs) : null;
   const preview = useMemo(() => {
     if (amount == null || inputs.length === 0 || splitError) return null;
     const shares = computeSplit(splitType, amount, inputs);
@@ -151,7 +156,6 @@ export default function ExpenseFormScreen() {
   }, [amount, splitType, inputs, splitError]);
 
   const setSplitType = (next: SplitType) => {
-    // Seed share weights to 1 so a fresh "Shares" split is immediately valid.
     if (next === 'shares') {
       setValues((prev) => {
         const updated = { ...prev };
@@ -209,238 +213,255 @@ export default function ExpenseFormScreen() {
     }
   };
 
-  if (loading) {
-    return <ActivityIndicator style={styles.center} size="large" />;
-  }
-
   const splitHint: Record<SplitType, string> = {
-    equal: 'Split equally between',
+    equal: 'Split equally between everyone selected',
     exact: 'Enter each person’s exact amount',
     percentage: 'Enter each person’s percentage',
     shares: 'Assign shares to each person',
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Stack.Screen options={{ title: isEdit ? 'Edit Expense' : 'New Expense' }} />
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. Dinner"
-          value={title}
-          onChangeText={setTitle}
-        />
-
-        <Text style={styles.label}>Amount</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="0.00"
-          value={amountText}
-          onChangeText={setAmountText}
-          keyboardType="decimal-pad"
-        />
-
-        <Text style={styles.label}>Paid by</Text>
-        <View style={styles.chips}>
-          {members.map((m) => (
-            <Pressable
-              key={m.user_id}
-              style={[styles.chip, paidBy === m.user_id && styles.chipActive]}
-              onPress={() => setPaidBy(m.user_id)}
-            >
-              <Text
-                style={[styles.chipText, paidBy === m.user_id && styles.chipTextActive]}
-              >
-                {m.profile.display_name}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={styles.label}>Category</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryRow}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Pressable
-            style={[styles.chip, category === null && styles.chipActive]}
-            onPress={() => setCategory(null)}
+    <GradientBackground>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader
+        title={isEdit ? 'Edit expense' : 'New expense'}
+        onBack={() => router.back()}
+      />
+      {loading ? (
+        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+      ) : (
+        <AnimatedScreen>
+          <KeyboardAvoidingView
+            style={styles.fill}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
-            <Text style={[styles.chipText, category === null && styles.chipTextActive]}>
-              None
-            </Text>
-          </Pressable>
-          {EXPENSE_CATEGORIES.map((c) => (
-            <Pressable
-              key={c.value}
-              style={[styles.chip, category === c.value && styles.chipActive]}
-              onPress={() => setCategory(c.value)}
-            >
-              <Text
-                style={[styles.chipText, category === c.value && styles.chipTextActive]}
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+              <ScrollView
+                contentContainerStyle={styles.content}
+                keyboardShouldPersistTaps="handled"
               >
-                {c.icon} {c.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        <Text style={styles.label}>Split</Text>
-        <View style={styles.segment}>
-          {SPLIT_TABS.map((t) => (
-            <Pressable
-              key={t.type}
-              style={[styles.segmentItem, splitType === t.type && styles.segmentActive]}
-              onPress={() => setSplitType(t.type)}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  splitType === t.type && styles.segmentTextActive,
-                ]}
-              >
-                {t.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={styles.hint}>{splitHint[splitType]}</Text>
-        {members.map((m) => {
-          const checked = participants.has(m.user_id);
-          const share = preview?.get(m.user_id);
-          return (
-            <View key={m.user_id} style={styles.memberRow}>
-              <Pressable
-                style={styles.memberToggle}
-                onPress={() => toggleParticipant(m.user_id)}
-              >
-                <View style={[styles.checkbox, checked && styles.checkboxOn]}>
-                  {checked ? <Text style={styles.checkmark}>✓</Text> : null}
-                </View>
-                <Text style={styles.memberName}>{m.profile.display_name}</Text>
-              </Pressable>
-
-              {checked && splitType !== 'equal' ? (
-                <TextInput
-                  style={styles.valueInput}
-                  placeholder={splitType === 'percentage' ? '%' : '0'}
-                  value={values[m.user_id] ?? ''}
-                  onChangeText={(t) => setValue(m.user_id, t)}
+                <Input
+                  label="Description"
+                  placeholder="e.g. Dinner"
+                  value={title}
+                  onChangeText={setTitle}
+                />
+                <Input
+                  label="Amount"
+                  placeholder="0.00"
+                  value={amountText}
+                  onChangeText={setAmountText}
                   keyboardType="decimal-pad"
                 />
-              ) : null}
 
-              {checked && share != null ? (
-                <Text style={styles.share}>{formatMoney(share)}</Text>
-              ) : null}
-            </View>
-          );
-        })}
+                <Text style={styles.label}>Paid by</Text>
+                <View style={styles.chips}>
+                  {members.map((m) => (
+                    <Chip
+                      key={m.user_id}
+                      label={m.profile.display_name}
+                      active={paidBy === m.user_id}
+                      onPress={() => setPaidBy(m.user_id)}
+                    />
+                  ))}
+                </View>
 
-        {splitError && amount != null ? (
-          <Text style={styles.warn}>{splitError}</Text>
-        ) : null}
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+                <Text style={styles.label}>Category</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.categoryRow}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <Chip
+                    label="None"
+                    active={category === null}
+                    onPress={() => setCategory(null)}
+                  />
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <Chip
+                      key={c.value}
+                      label={c.label}
+                      active={category === c.value}
+                      onPress={() => setCategory(c.value)}
+                    />
+                  ))}
+                </ScrollView>
 
-        <Pressable
-          style={[styles.button, !canSubmit && styles.buttonDisabled]}
-          onPress={onSubmit}
-          disabled={!canSubmit}
-        >
-          <Text style={styles.buttonText}>
-            {submitting ? 'Saving…' : isEdit ? 'Save changes' : 'Add expense'}
-          </Text>
-        </Pressable>
-      </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+                <Text style={styles.label}>Split</Text>
+                <View style={styles.segment}>
+                  {SPLIT_TABS.map((t) => (
+                    <Pressable
+                      key={t.type}
+                      style={[styles.segmentItem, splitType === t.type && styles.segmentActive]}
+                      onPress={() => setSplitType(t.type)}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentText,
+                          splitType === t.type && styles.segmentTextActive,
+                        ]}
+                      >
+                        {t.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={styles.hint}>{splitHint[splitType]}</Text>
+
+                <View style={styles.memberList}>
+                  {members.map((m) => {
+                    const checked = participants.has(m.user_id);
+                    const share = preview?.get(m.user_id);
+                    return (
+                      <View key={m.user_id} style={styles.memberRow}>
+                        <Pressable
+                          style={styles.memberToggle}
+                          onPress={() => toggleParticipant(m.user_id)}
+                        >
+                          <View style={[styles.checkbox, checked && styles.checkboxOn]}>
+                            {checked ? (
+                              <Feather name="check" size={14} color={theme.colors.white} />
+                            ) : null}
+                          </View>
+                          <Avatar
+                            name={m.profile.display_name}
+                            uri={m.profile.avatar_url}
+                            size={28}
+                          />
+                          <Text style={styles.memberName}>{m.profile.display_name}</Text>
+                        </Pressable>
+
+                        {checked && splitType !== 'equal' ? (
+                          <Input
+                            placeholder={splitType === 'percentage' ? '%' : '0'}
+                            value={values[m.user_id] ?? ''}
+                            onChangeText={(t) => setValue(m.user_id, t)}
+                            keyboardType="decimal-pad"
+                            style={styles.valueInput}
+                          />
+                        ) : null}
+
+                        {checked && share != null ? (
+                          <Text style={styles.share}>{formatMoney(share)}</Text>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {splitError && amount != null ? (
+                  <Text style={styles.warn}>{splitError}</Text>
+                ) : null}
+                {error ? <Text style={styles.error}>{error}</Text> : null}
+
+                <Button
+                  title={isEdit ? 'Save changes' : 'Add expense'}
+                  onPress={onSubmit}
+                  loading={submitting}
+                  disabled={!canSubmit}
+                  style={styles.submit}
+                />
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </AnimatedScreen>
+      )}
+    </GradientBackground>
+  );
+}
+
+function Chip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, gap: 8 },
+  fill: { flex: 1 },
+  content: { padding: theme.spacing.xl, gap: theme.spacing.md, paddingBottom: theme.spacing.xxxl },
   center: { flex: 1 },
-  label: { fontSize: 14, color: '#666', marginTop: 8 },
-  hint: { fontSize: 13, color: '#999', marginTop: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+  label: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  categoryRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+  hint: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  categoryRow: { flexDirection: 'row', gap: theme.spacing.sm, paddingVertical: 2 },
   chip: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.full,
+    paddingHorizontal: theme.spacing.md + 2,
+    paddingVertical: theme.spacing.xs + 2,
   },
-  chipActive: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
-  chipText: { fontSize: 14, color: '#333' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
+  chipActive: { backgroundColor: theme.colors.accent },
+  chipText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.accent,
+  },
+  chipTextActive: { color: theme.colors.white },
   segment: {
     flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#1d9e75',
-    borderRadius: 8,
-    overflow: 'hidden',
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.md,
+    padding: 3,
   },
-  segmentItem: { flex: 1, paddingVertical: 9, alignItems: 'center' },
-  segmentActive: { backgroundColor: '#1d9e75' },
-  segmentText: { fontSize: 14, color: '#1d9e75', fontWeight: '600' },
-  segmentTextActive: { color: '#fff' },
+  segmentItem: {
+    flex: 1,
+    paddingVertical: theme.spacing.sm,
+    alignItems: 'center',
+    borderRadius: theme.radii.sm,
+  },
+  segmentActive: { backgroundColor: theme.colors.accent },
+  segmentText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.accent,
+    fontWeight: theme.typography.weights.semibold,
+  },
+  segmentTextActive: { color: theme.colors.white },
+  memberList: { gap: theme.spacing.xs },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    gap: 12,
+    paddingVertical: theme.spacing.xs,
+    gap: theme.spacing.md,
   },
-  memberToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  memberToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: theme.radii.sm,
     borderWidth: 1.5,
-    borderColor: '#ccc',
+    borderColor: theme.colors.textTertiary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxOn: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
-  checkmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  memberName: { fontSize: 16 },
-  valueInput: {
-    width: 72,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontSize: 15,
+  checkboxOn: { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
+  memberName: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textPrimary,
+  },
+  valueInput: { width: 76, textAlign: 'right' },
+  share: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    minWidth: 64,
     textAlign: 'right',
   },
-  share: { fontSize: 15, color: '#666', minWidth: 64, textAlign: 'right' },
-  warn: { color: '#b9770e', fontSize: 14, marginTop: 8 },
-  error: { color: '#c0392b', fontSize: 14, marginTop: 8 },
-  button: {
-    backgroundColor: '#1d9e75',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  warn: { color: theme.colors.warning, fontSize: theme.typography.sizes.sm, marginTop: theme.spacing.xs },
+  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm, marginTop: theme.spacing.xs },
+  submit: { marginTop: theme.spacing.md },
 });
