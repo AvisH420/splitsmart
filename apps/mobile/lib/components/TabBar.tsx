@@ -2,13 +2,13 @@ import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import type { ComponentProps } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { theme } from '../theme';
+import { useTheme, type Theme } from '../theme';
 
 type FeatherName = ComponentProps<typeof Feather>['name'];
 
-/** Route name -> tab label + icon. Routes not listed here are not shown. */
 const TABS: Record<string, { label: string; icon: FeatherName }> = {
   index: { label: 'Groups', icon: 'home' },
   activity: { label: 'Activity', icon: 'activity' },
@@ -17,35 +17,39 @@ const TABS: Record<string, { label: string; icon: FeatherName }> = {
 };
 
 /**
- * Floating frosted-glass pill tab bar (quality bar: docs/design-references/
- * whatsapp-navbar.jpg). On iOS the bar is transparent over a BlurView that
- * frosts the content scrolling beneath it, with a warm tint, a hairline border
- * and a soft floating shadow. Android uses a solid warm fill + elevation.
- * Active tab: accent icon + label over a soft accentSubtle pill. Inactive:
- * tertiary text, no fill.
+ * Floating frosted-glass pill tab bar. The BlurView is the entire background
+ * (tinted to the active scheme) with a warm wash, a hairline border and a soft
+ * hovering shadow. Active tab: an accentSubtle pill with icon + label in
+ * accent. Inactive: icon only in textTertiary. Icons spring on press.
  */
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const t = useTheme();
   const isIOS = Platform.OS === 'ios';
 
   return (
     <View
       style={[
         styles.container,
-        isIOS ? styles.containerIOS : styles.containerAndroid,
-        { bottom: Math.max(insets.bottom, theme.spacing.md) },
+        {
+          borderColor: t.colors.glassBorder,
+          bottom: Math.max(insets.bottom, t.spacing.md),
+          ...(isIOS
+            ? t.shadows.lg
+            : { backgroundColor: t.colors.glassBackground, elevation: 10 }),
+        },
       ]}
     >
       {isIOS ? (
         <>
           <BlurView
             intensity={40}
-            tint="light"
+            tint={t.blurTint}
             style={[StyleSheet.absoluteFill, styles.clip]}
             pointerEvents="none"
           />
           <View
-            style={[StyleSheet.absoluteFill, styles.clip, styles.tint]}
+            style={[StyleSheet.absoluteFill, styles.clip, { backgroundColor: t.colors.tabBarTint }]}
             pointerEvents="none"
           />
         </>
@@ -55,71 +59,97 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         const config = TABS[route.name];
         if (!config) return null;
         const isActive = state.routes[state.index]?.key === route.key;
-        const color = isActive ? theme.colors.accent : theme.colors.textTertiary;
         return (
-          <Pressable
+          <TabItem
             key={route.key}
-            style={styles.tab}
+            label={config.label}
+            icon={config.icon}
+            active={isActive}
+            theme={t}
             onPress={() => {
               const event = navigation.emit({
                 type: 'tabPress',
                 target: route.key,
                 canPreventDefault: true,
               });
-              if (!isActive && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
+              if (!isActive && !event.defaultPrevented) navigation.navigate(route.name);
             }}
-          >
-            <View style={[styles.pill, isActive && styles.pillActive]}>
-              <Feather name={config.icon} size={20} color={color} />
-            </View>
-            <Text style={[styles.label, { color }]} numberOfLines={1}>
-              {config.label}
-            </Text>
-          </Pressable>
+          />
         );
       })}
     </View>
   );
 }
 
+function TabItem({
+  label,
+  icon,
+  active,
+  theme: t,
+  onPress,
+}: {
+  label: string;
+  icon: FeatherName;
+  active: boolean;
+  theme: Theme;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const spring = (toValue: number) =>
+    Animated.spring(scale, { toValue, useNativeDriver: true, speed: 50, bounciness: 6 }).start();
+  const color = active ? t.colors.accent : t.colors.textTertiary;
+
+  return (
+    <Pressable
+      style={styles.tab}
+      onPress={onPress}
+      onPressIn={() => spring(0.86)}
+      onPressOut={() => spring(1)}
+      hitSlop={6}
+    >
+      <Animated.View
+        style={[
+          styles.pill,
+          active && { backgroundColor: t.colors.accentSubtle },
+          active && styles.pillActive,
+          { transform: [{ scale }] },
+        ]}
+      >
+        <Feather name={icon} size={20} color={color} />
+        {active ? (
+          <Text style={[styles.label, { color }]} numberOfLines={1}>
+            {label}
+          </Text>
+        ) : null}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
+    left: 16,
+    right: 16,
     flexDirection: 'row',
-    borderRadius: theme.radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.glassBorder,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.xs,
-  },
-  containerIOS: {
-    backgroundColor: 'transparent',
-    ...theme.shadows.lg,
-  },
-  containerAndroid: {
-    backgroundColor: theme.colors.glassBackground,
-    elevation: 8,
-  },
-  clip: { borderRadius: theme.radii.xl },
-  tint: { backgroundColor: theme.colors.tabBarTint },
-  tab: {
-    flex: 1,
     alignItems: 'center',
-    gap: theme.spacing.xs,
-    paddingVertical: theme.spacing.xs,
+    borderRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    backgroundColor: Platform.OS === 'ios' ? 'transparent' : undefined,
   },
+  clip: { borderRadius: 24 },
+  tab: { flex: 1, alignItems: 'center' },
   pill: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.xs + 1,
-    borderRadius: theme.radii.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 9999,
   },
-  pillActive: { backgroundColor: theme.colors.accentSubtle },
-  label: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.medium,
-  },
+  pillActive: { paddingHorizontal: 16 },
+  label: { fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
 });
