@@ -11,10 +11,13 @@ export function AnimatedMoney({
   value,
   currency,
   style,
+  formatValue,
 }: {
   value: number;
   currency?: string;
   style?: TextStyle | TextStyle[];
+  /** Override how the animating number is rendered (e.g. without a symbol). */
+  formatValue?: (n: number) => string;
 }) {
   const anim = useRef(new Animated.Value(0)).current;
   const [display, setDisplay] = useState(0);
@@ -30,5 +33,6 @@ export function AnimatedMoney({
     return () => anim.removeListener(sub);
   }, [anim, value]);
 
-  return <Animated.Text style={style}>{formatMoney(display, currency)}</Animated.Text>;
+  const text = formatValue ? formatValue(display) : formatMoney(display, currency);
+  return <Animated.Text style={style}>{text}</Animated.Text>;
 }

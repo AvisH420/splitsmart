@@ -17,43 +17,37 @@ const TABS: Record<string, { label: string; icon: FeatherName }> = {
 };
 
 /**
- * Floating frosted-glass pill tab bar. The BlurView is the entire background
- * (tinted to the active scheme) with a warm wash, a hairline border and a soft
- * hovering shadow. Active tab: an accentSubtle pill with icon + label in
- * accent. Inactive: icon only in textTertiary. Icons spring on press.
+ * Floating frosted-glass pill tab bar (see docs/design-references/
+ * whatsapp-navbar.jpg). A strong BlurView background with a warm tint overlay,
+ * a bright top edge, and a shadow that lifts it off the content. Inset from the
+ * screen edges, clearing the home indicator. Active tab gets a rounded-rect
+ * accentSubtle background with icon + label; inactive tabs are icon-only.
  */
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const t = useTheme();
-  const isIOS = Platform.OS === 'ios';
 
   return (
     <View
       style={[
         styles.container,
         {
-          borderColor: t.colors.glassBorder,
-          bottom: Math.max(insets.bottom, t.spacing.md),
-          ...(isIOS
-            ? t.shadows.lg
-            : { backgroundColor: t.colors.glassBackground, elevation: 10 }),
+          bottom: Math.max(insets.bottom, 12),
+          borderColor: t.colors.tabBarBorder,
+          shadowColor: t.shadows.sm.shadowColor,
         },
       ]}
     >
-      {isIOS ? (
-        <>
-          <BlurView
-            intensity={40}
-            tint={t.blurTint}
-            style={[StyleSheet.absoluteFill, styles.clip]}
-            pointerEvents="none"
-          />
-          <View
-            style={[StyleSheet.absoluteFill, styles.clip, { backgroundColor: t.colors.tabBarTint }]}
-            pointerEvents="none"
-          />
-        </>
-      ) : null}
+      <BlurView
+        intensity={55}
+        tint={t.blurTint}
+        style={[StyleSheet.absoluteFill, styles.clip]}
+        pointerEvents="none"
+      />
+      <View
+        style={[StyleSheet.absoluteFill, styles.clip, { backgroundColor: t.colors.tabBarTint }]}
+        pointerEvents="none"
+      />
 
       {state.routes.map((route) => {
         const config = TABS[route.name];
@@ -109,13 +103,12 @@ function TabItem({
     >
       <Animated.View
         style={[
-          styles.pill,
+          styles.itemInner,
           active && { backgroundColor: t.colors.accentSubtle },
-          active && styles.pillActive,
           { transform: [{ scale }] },
         ]}
       >
-        <Feather name={icon} size={20} color={color} />
+        <Feather name={icon} size={active ? 24 : 22} color={color} />
         {active ? (
           <Text style={[styles.label, { color }]} numberOfLines={1}>
             {label}
@@ -134,22 +127,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 24,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0.5,
     paddingVertical: 8,
     paddingHorizontal: 8,
-    backgroundColor: Platform.OS === 'ios' ? 'transparent' : undefined,
+    backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(236,230,217,0.92)',
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
   },
   clip: { borderRadius: 24 },
   tab: { flex: 1, alignItems: 'center' },
-  pill: {
+  itemInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 9999,
+    paddingHorizontal: 12,
+    borderRadius: 10,
   },
-  pillActive: { paddingHorizontal: 16 },
   label: { fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
 });

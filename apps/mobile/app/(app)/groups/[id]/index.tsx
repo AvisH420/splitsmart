@@ -49,6 +49,28 @@ import type {
   MemberBalance,
 } from '../../../../lib/types';
 
+/** The currency symbol alone (e.g. derived at runtime, no literal in source). */
+function currencySymbol(currency = 'INR'): string {
+  try {
+    const parts = new Intl.NumberFormat('en-IN', { style: 'currency', currency }).formatToParts(0);
+    return parts.find((p) => p.type === 'currency')?.value ?? currency;
+  } catch {
+    return currency;
+  }
+}
+
+/** A grouped number with two decimals, no currency symbol. */
+function formatNumber(n: number): string {
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return n.toFixed(2);
+  }
+}
+
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -182,10 +204,18 @@ export default function GroupDetailScreen() {
               {myNet === 0 ? (
                 <Text style={[styles.heroAmount, styles.neutral]}>All settled</Text>
               ) : (
-                <AnimatedMoney
-                  value={Math.abs(myNet)}
-                  style={[styles.heroAmount, myNet > 0 ? styles.positive : styles.negative]}
-                />
+                <View style={styles.heroAmountRow}>
+                  <Text
+                    style={[styles.heroSymbol, myNet > 0 ? styles.positive : styles.negative]}
+                  >
+                    {currencySymbol()}
+                  </Text>
+                  <AnimatedMoney
+                    value={Math.abs(myNet)}
+                    formatValue={formatNumber}
+                    style={[styles.heroAmount, myNet > 0 ? styles.positive : styles.negative]}
+                  />
+                </View>
               )}
               {myNet !== 0 ? (
                 <Text style={styles.heroSub}>
@@ -414,15 +444,23 @@ const makeStyles = (t: Theme) =>
     fontWeight: t.typography.weights.medium,
     color: t.colors.textSecondary,
   },
+  heroAmountRow: { flexDirection: 'row', alignItems: 'flex-start' },
   heroAmount: {
     fontSize: t.typography.sizes.giant,
     fontFamily: t.typography.fonts.serif,
-    fontWeight: t.typography.weights.semibold,
+    fontWeight: t.typography.weights.regular,
     letterSpacing: t.typography.tracking.tight,
   },
+  heroSymbol: {
+    // SF Pro (no fontFamily), ~60% of the number, sitting at its top edge.
+    fontSize: Math.round(t.typography.sizes.giant * 0.6),
+    fontWeight: t.typography.weights.medium,
+    marginTop: 4,
+    marginRight: 2,
+  },
   heroLabelSpaced: {
-    fontSize: t.typography.sizes.xs,
-    color: t.colors.textSecondary,
+    fontSize: 11,
+    color: t.colors.textTertiary,
     letterSpacing: t.typography.tracking.widest,
     textTransform: 'uppercase',
   },

@@ -61,9 +61,9 @@ const styles = StyleSheet.create({
   back: { marginLeft: -8 },
   title: {
     flex: 1,
-    fontSize: 30,
-    fontWeight: '600',
-    letterSpacing: -0.4,
+    fontSize: 26,
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   right: { flexDirection: 'row', alignItems: 'center', gap: 16 },
 });

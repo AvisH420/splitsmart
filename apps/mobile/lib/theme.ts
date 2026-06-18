@@ -32,6 +32,7 @@ export type Colors = {
   glassTint: string;
   glassHighlight: string;
   tabBarTint: string;
+  tabBarBorder: string;
   hairline: string;
   vignette: string; // faint edge-darkening for depth over the gradient
   white: string;
@@ -63,7 +64,8 @@ const lightColors: Colors = {
   glassShadow: 'rgba(80, 60, 35, 0.16)',
   glassTint: 'rgba(244, 239, 230, 0.4)', // warm wash over iOS blur
   glassHighlight: 'rgba(255, 255, 255, 0.5)',
-  tabBarTint: 'rgba(240, 234, 224, 0.4)',
+  tabBarTint: 'rgba(236, 230, 217, 0.45)',
+  tabBarBorder: 'rgba(255, 255, 255, 0.8)',
   hairline: 'rgba(150, 130, 100, 0.28)',
   vignette: 'rgba(110, 90, 60, 0.07)',
 
@@ -96,7 +98,8 @@ const darkColors: Colors = {
   glassShadow: 'rgba(0, 0, 0, 0.4)',
   glassTint: 'rgba(32, 28, 22, 0.45)',
   glassHighlight: 'rgba(255, 255, 255, 0.06)',
-  tabBarTint: 'rgba(28, 24, 18, 0.5)',
+  tabBarTint: 'rgba(30, 26, 20, 0.5)',
+  tabBarBorder: 'rgba(255, 255, 255, 0.15)',
   hairline: 'rgba(150, 130, 100, 0.24)',
   vignette: 'rgba(0, 0, 0, 0.35)',
 
