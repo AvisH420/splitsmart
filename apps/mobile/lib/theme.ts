@@ -1,4 +1,5 @@
 import { Platform, useColorScheme } from 'react-native';
+import { useThemeMode } from './theme-context';
 
 /**
  * Design tokens for SplitSmart. Two palettes - a warm linen light mode and a
@@ -39,14 +40,15 @@ export type Colors = {
 };
 
 const lightColors: Colors = {
-  // Warm linen - soft light from above (lighter top, deeper bottom).
-  backgroundStart: '#ECE6D9',
-  backgroundEnd: '#DCD3C1',
+  // Near-white neutral canvas with just a whisper of warmth - the colour
+  // should barely be nameable; warmth comes from the accent, not the surface.
+  backgroundStart: '#F5F4F2',
+  backgroundEnd: '#FFFFFF',
 
-  surface: '#F4EFE6', // a touch lighter than the background
-  surfaceBorder: 'rgba(170, 150, 120, 0.28)',
+  surface: 'rgba(255, 255, 255, 0.85)', // cards lift slightly off the canvas
+  surfaceBorder: 'rgba(0, 0, 0, 0.06)',
 
-  accent: '#8B6F47', // deep warm brown
+  accent: '#8B6F47', // deep warm brown / brass - unchanged
   accentLight: '#B79B73',
   accentSubtle: '#E5DAC6',
   onAccent: '#FFFFFF',
@@ -59,31 +61,31 @@ const lightColors: Colors = {
   negative: '#A6553C', // terracotta
   warning: '#B98B4E', // warm amber
 
-  glassBackground: 'rgba(244, 239, 230, 0.72)', // Android / fallback fill
-  glassBorder: 'rgba(255, 255, 255, 0.5)',
-  glassShadow: 'rgba(80, 60, 35, 0.16)',
-  glassTint: 'rgba(244, 239, 230, 0.4)', // warm wash over iOS blur
-  glassHighlight: 'rgba(255, 255, 255, 0.5)',
-  tabBarTint: 'rgba(236, 230, 217, 0.45)',
+  glassBackground: 'rgba(255, 255, 255, 0.85)', // Android / fallback fill
+  glassBorder: 'rgba(255, 255, 255, 0.6)',
+  glassShadow: 'rgba(60, 50, 40, 0.14)',
+  glassTint: 'rgba(255, 255, 255, 0.12)', // near-zero neutral lift over the blur
+  glassHighlight: 'rgba(255, 255, 255, 0.6)',
+  tabBarTint: 'rgba(255, 255, 255, 0.5)',
   tabBarBorder: 'rgba(255, 255, 255, 0.8)',
-  hairline: 'rgba(150, 130, 100, 0.28)',
-  vignette: 'rgba(110, 90, 60, 0.07)',
+  hairline: 'rgba(0, 0, 0, 0.07)',
+  vignette: 'rgba(0, 0, 0, 0.025)',
 
   white: '#FFFFFF',
 };
 
 const darkColors: Colors = {
-  // Warm charcoal - a dimly lit room, never cold.
-  backgroundStart: '#201C16',
-  backgroundEnd: '#15120D',
+  // Native iOS dark - deep and clean, not brownish.
+  backgroundStart: '#1C1C1E',
+  backgroundEnd: '#000000',
 
-  surface: '#26211A', // slightly lifted warm dark
-  surfaceBorder: 'rgba(120, 105, 82, 0.32)',
+  surface: 'rgba(44, 44, 46, 0.9)', // iOS elevated surface
+  surfaceBorder: 'rgba(255, 255, 255, 0.08)',
 
-  accent: '#CBA76C', // warm brass, legible on dark
+  accent: '#CBA76C', // brass/gold, legible on dark - same gold identity
   accentLight: '#DDC18C',
-  accentSubtle: 'rgba(203, 167, 108, 0.16)',
-  onAccent: '#201C16',
+  accentSubtle: 'rgba(203, 167, 108, 0.18)',
+  onAccent: '#1C1C1E',
 
   textPrimary: '#ECE4D6',
   textSecondary: '#A99C86',
@@ -93,15 +95,15 @@ const darkColors: Colors = {
   negative: '#CC8568',
   warning: '#D6AC6C',
 
-  glassBackground: 'rgba(38, 33, 26, 0.7)',
-  glassBorder: 'rgba(255, 255, 255, 0.08)',
-  glassShadow: 'rgba(0, 0, 0, 0.4)',
-  glassTint: 'rgba(32, 28, 22, 0.45)',
-  glassHighlight: 'rgba(255, 255, 255, 0.06)',
-  tabBarTint: 'rgba(30, 26, 20, 0.5)',
+  glassBackground: 'rgba(44, 44, 46, 0.9)',
+  glassBorder: 'rgba(255, 255, 255, 0.1)',
+  glassShadow: 'rgba(0, 0, 0, 0.5)',
+  glassTint: 'rgba(255, 255, 255, 0.04)',
+  glassHighlight: 'rgba(255, 255, 255, 0.08)',
+  tabBarTint: 'rgba(44, 44, 46, 0.55)',
   tabBarBorder: 'rgba(255, 255, 255, 0.15)',
-  hairline: 'rgba(150, 130, 100, 0.24)',
-  vignette: 'rgba(0, 0, 0, 0.35)',
+  hairline: 'rgba(255, 255, 255, 0.1)',
+  vignette: 'rgba(0, 0, 0, 0.3)',
 
   white: '#FFFFFF',
 };
@@ -205,10 +207,12 @@ export const darkTheme: Theme = {
   shadows,
 };
 
-/** Active theme based on the system colour scheme. */
+/** Active theme: the user's preference, or the system scheme when 'system'. */
 export function useTheme(): Theme {
-  const scheme = useColorScheme();
-  return scheme === 'dark' ? darkTheme : lightTheme;
+  const system = useColorScheme();
+  const { mode } = useThemeMode();
+  const effective = mode === 'system' ? system ?? 'light' : mode;
+  return effective === 'dark' ? darkTheme : lightTheme;
 }
 
 /** Light-mode alias for back-compat and module-level (non-reactive) use. */

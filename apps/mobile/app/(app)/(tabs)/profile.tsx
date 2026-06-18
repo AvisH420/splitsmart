@@ -23,11 +23,19 @@ import { Input } from '../../../lib/components/Input';
 import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { getProfile, updateProfile, uploadAvatar } from '../../../lib/repositories/profiles';
 import { useTheme, type Theme } from '../../../lib/theme';
+import { useThemeMode, type ThemeMode } from '../../../lib/theme-context';
 import type { Profile } from '../../../lib/types';
+
+const MODES: { value: ThemeMode; label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+];
 
 export default function ProfileScreen() {
   const t = useTheme();
   const styles = makeStyles(t);
+  const { mode, setMode } = useThemeMode();
   const { session, signOut } = useAuth();
   const userId = session?.user?.id;
 
@@ -143,6 +151,28 @@ export default function ProfileScreen() {
                   <Text style={styles.readonlyValue}>{profile?.email ?? '-'}</Text>
                 </View>
 
+                <View style={styles.section}>
+                  <Text style={styles.readonlyLabel}>Appearance</Text>
+                  <View style={styles.modeRow}>
+                    {MODES.map((m) => {
+                      const isActive = mode === m.value;
+                      return (
+                        <Pressable
+                          key={m.value}
+                          style={[styles.modeChip, isActive && styles.modeChipActive]}
+                          onPress={() => setMode(m.value)}
+                        >
+                          <Text
+                            style={[styles.modeChipText, isActive && styles.modeChipTextActive]}
+                          >
+                            {m.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 {savedNote ? <Text style={styles.saved}>Saved.</Text> : null}
 
@@ -192,4 +222,20 @@ const makeStyles = (t: Theme) =>
   error: { color: t.colors.negative, fontSize: t.typography.sizes.sm },
   saved: { color: t.colors.positive, fontSize: t.typography.sizes.sm },
   gap: { marginTop: t.spacing.sm },
+  section: { gap: t.spacing.xs, marginTop: t.spacing.xs },
+  modeRow: { flexDirection: 'row', gap: t.spacing.sm },
+  modeChip: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: t.spacing.sm + 2,
+    borderRadius: t.radii.md,
+    backgroundColor: t.colors.accentSubtle,
+  },
+  modeChipActive: { backgroundColor: t.colors.accent },
+  modeChipText: {
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.medium,
+    color: t.colors.accent,
+  },
+  modeChipTextActive: { color: t.colors.onAccent },
 });

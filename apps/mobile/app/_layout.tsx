@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '../lib/auth-context';
+import { ThemeProvider } from '../lib/theme-context';
 import { usePushNotifications } from '../lib/use-push-notifications';
 
 // How notifications behave while the app is foregrounded.
@@ -51,9 +52,11 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
