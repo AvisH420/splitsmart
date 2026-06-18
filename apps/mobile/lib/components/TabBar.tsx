@@ -142,10 +142,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     borderRadius: 10,
   },
-  label: { fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
+  label: { fontSize: 13, fontWeight: '600', letterSpacing: 0 },
 });

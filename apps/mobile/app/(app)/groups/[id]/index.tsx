@@ -27,7 +27,6 @@ import { GlassCard } from '../../../../lib/components/GlassCard';
 import { GradientBackground } from '../../../../lib/components/GradientBackground';
 import { Input } from '../../../../lib/components/Input';
 import { PressableScale } from '../../../../lib/components/PressableScale';
-import { Pulse } from '../../../../lib/components/Pulse';
 import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import { Skeleton } from '../../../../lib/components/Skeleton';
 import { formatMoney } from '../../../../lib/format';
@@ -48,28 +47,6 @@ import type {
   GroupMemory,
   MemberBalance,
 } from '../../../../lib/types';
-
-/** The currency symbol alone (e.g. derived at runtime, no literal in source). */
-function currencySymbol(currency = 'INR'): string {
-  try {
-    const parts = new Intl.NumberFormat('en-IN', { style: 'currency', currency }).formatToParts(0);
-    return parts.find((p) => p.type === 'currency')?.value ?? currency;
-  } catch {
-    return currency;
-  }
-}
-
-/** A grouped number with two decimals, no currency symbol. */
-function formatNumber(n: number): string {
-  try {
-    return new Intl.NumberFormat('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(n);
-  } catch {
-    return n.toFixed(2);
-  }
-}
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -201,27 +178,19 @@ export default function GroupDetailScreen() {
             {/* Balance hero */}
             <GlassCard style={styles.hero}>
               <Text style={styles.heroLabelSpaced}>Your balance</Text>
-              {myNet === 0 ? (
-                <Text style={[styles.heroAmount, styles.neutral]}>All settled</Text>
-              ) : (
-                <View style={styles.heroAmountRow}>
-                  <Text
-                    style={[styles.heroSymbol, myNet > 0 ? styles.positive : styles.negative]}
-                  >
-                    {currencySymbol()}
-                  </Text>
-                  <AnimatedMoney
-                    value={Math.abs(myNet)}
-                    formatValue={formatNumber}
-                    style={[styles.heroAmount, myNet > 0 ? styles.positive : styles.negative]}
-                  />
-                </View>
-              )}
               {myNet !== 0 ? (
-                <Text style={styles.heroSub}>
-                  {myNet > 0 ? 'you are owed overall' : 'you owe overall'}
-                </Text>
+                <AnimatedMoney
+                  value={Math.abs(myNet)}
+                  style={[styles.heroAmount, myNet > 0 ? styles.positive : styles.negative]}
+                />
               ) : null}
+              <Text style={styles.heroSub}>
+                {myNet === 0
+                  ? 'All settled'
+                  : myNet > 0
+                    ? 'you are owed overall'
+                    : 'you owe overall'}
+              </Text>
 
               <View style={styles.statsRow}>
                 <View style={styles.stat}>
@@ -244,13 +213,12 @@ export default function GroupDetailScreen() {
                 </View>
               </View>
 
-              <Pulse active={myNet !== 0} style={styles.heroButton}>
-                <Button
-                  title="Settle up"
-                  variant="secondary"
-                  onPress={() => router.push(`/groups/${id}/settle`)}
-                />
-              </Pulse>
+              <Button
+                title="Settle up"
+                variant="secondary"
+                onPress={() => router.push(`/groups/${id}/settle`)}
+                style={styles.heroButton}
+              />
             </GlassCard>
 
             {/* Balances */}
@@ -444,19 +412,10 @@ const makeStyles = (t: Theme) =>
     fontWeight: t.typography.weights.medium,
     color: t.colors.textSecondary,
   },
-  heroAmountRow: { flexDirection: 'row', alignItems: 'flex-start' },
   heroAmount: {
-    fontSize: t.typography.sizes.giant,
-    fontFamily: t.typography.fonts.serif,
-    fontWeight: t.typography.weights.regular,
-    letterSpacing: t.typography.tracking.tight,
-  },
-  heroSymbol: {
-    // SF Pro (no fontFamily), ~60% of the number, sitting at its top edge.
-    fontSize: Math.round(t.typography.sizes.giant * 0.6),
-    fontWeight: t.typography.weights.medium,
-    marginTop: 4,
-    marginRight: 2,
+    fontSize: 48,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   heroLabelSpaced: {
     fontSize: 11,
@@ -464,7 +423,11 @@ const makeStyles = (t: Theme) =>
     letterSpacing: t.typography.tracking.widest,
     textTransform: 'uppercase',
   },
-  heroSub: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
+  heroSub: {
+    fontSize: 15,
+    fontWeight: '300',
+    color: t.colors.textSecondary,
+  },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',

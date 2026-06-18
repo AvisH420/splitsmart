@@ -35,13 +35,7 @@ export function ScreenHeader({
           <Feather name="chevron-left" size={26} color={t.colors.textPrimary} />
         </Pressable>
       ) : null}
-      <Text
-        style={[
-          styles.title,
-          { color: t.colors.textPrimary, fontFamily: t.typography.fonts.serif },
-        ]}
-        numberOfLines={1}
-      >
+      <Text style={[styles.title, { color: t.colors.textPrimary }]} numberOfLines={1}>
         {title}
       </Text>
       {right ? <View style={styles.right}>{right}</View> : null}
@@ -62,7 +56,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontSize: 26,
-    fontWeight: '400',
+    fontWeight: '600',
     letterSpacing: -0.2,
   },
   right: { flexDirection: 'row', alignItems: 'center', gap: 16 },
