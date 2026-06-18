@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '../lib/auth-context';
+import { OnboardingProvider, useOnboarding } from '../lib/onboarding-context';
 import { ThemeProvider } from '../lib/theme-context';
 import { usePushNotifications } from '../lib/use-push-notifications';
 
@@ -27,9 +28,10 @@ Notifications.setNotificationHandler({
  */
 function RootNavigator() {
   const { session, loading } = useAuth();
+  const { complete } = useOnboarding();
   usePushNotifications();
 
-  if (loading) {
+  if (loading || complete === null) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" />
@@ -39,11 +41,15 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!!session}>
+      <Stack.Protected guard={!complete}>
+        <Stack.Screen name="onboarding" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={complete && !!session}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={!session}>
+      <Stack.Protected guard={complete && !session}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
     </Stack>
@@ -53,9 +59,11 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
+      <OnboardingProvider>
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
+      </OnboardingProvider>
     </ThemeProvider>
   );
 }
