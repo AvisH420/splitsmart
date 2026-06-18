@@ -58,12 +58,14 @@ export type Database = {
           name: string;
           created_by: string;
           created_at: string;
+          cover_url: string | null;
         };
         Insert: {
           id?: string;
           name: string;
           created_by: string;
           created_at?: string;
+          cover_url?: string | null;
         };
         Update: Partial<Database['public']['Tables']['groups']['Insert']>;
         Relationships: [];
@@ -282,6 +284,44 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['push_tokens']['Insert']>;
         Relationships: [];
       };
+      expense_payers: {
+        Row: {
+          id: string;
+          expense_id: string;
+          user_id: string;
+          amount: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          expense_id: string;
+          user_id: string;
+          amount: number;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['expense_payers']['Insert']>;
+        Relationships: [];
+      };
+      expense_comments: {
+        Row: {
+          id: string;
+          expense_id: string;
+          user_id: string;
+          content: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          expense_id: string;
+          user_id: string;
+          content: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['expense_comments']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -300,6 +340,7 @@ export type Database = {
           p_split_type: SplitType;
           p_participants: SaveExpenseParticipant[];
           p_category?: ExpenseCategory | null;
+          p_payers?: { user_id: string; amount: number }[];
         };
         Returns: Database['public']['Tables']['expenses']['Row'];
       };

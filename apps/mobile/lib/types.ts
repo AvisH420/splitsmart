@@ -49,6 +49,8 @@ export type Group = {
   name: string;
   created_by: string;
   created_at: string;
+  /** Public URL of the group cover photo; null = no cover. */
+  cover_url: string | null;
 };
 
 export type GroupMember = {
@@ -88,6 +90,26 @@ export type ExpenseParticipant = {
   /** Raw split input (percent / share-weight / exact amount); null for equal. */
   split_value: number | null;
   created_at: string;
+};
+
+/** One payer's contribution to a multi-payer expense. */
+export type ExpensePayer = {
+  id: string;
+  expense_id: string;
+  user_id: string;
+  amount: number;
+  created_at: string;
+};
+
+/** A comment on an expense, joined with its author for display. */
+export type ExpenseComment = {
+  id: string;
+  expense_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  author: Pick<Profile, 'id' | 'display_name' | 'avatar_url'>;
 };
 
 export type Settlement = {
