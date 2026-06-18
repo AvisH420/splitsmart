@@ -28,6 +28,13 @@ export type ExpenseCategory =
 
 export type InvitationStatus = 'pending' | 'accepted' | 'expired';
 
+/** AI / group-memory enums (mirror the initial-schema + Phase 4 migration). */
+export type MemoryType = 'preference' | 'rule' | 'habit';
+export type MemoryStatus = 'active' | 'archived' | 'superseded';
+export type MemorySource = 'user_stated' | 'ai_inferred' | 'system';
+/** Per-line-item category on expense_items (initial-schema enum). */
+export type ItemCategory = 'food' | 'veg' | 'non_veg' | 'alcohol' | 'other';
+
 export type Profile = {
   id: string;
   email: string | null;
@@ -167,3 +174,102 @@ export type Invitation = {
 
 /** Result of the invite_to_group RPC. */
 export type InviteResult = 'added' | 'invited';
+
+/** A stored group memory (preference / rule / habit) about a member or group. */
+export type GroupMemory = {
+  id: string;
+  group_id: string;
+  author_id: string;
+  subject_user_id: string | null;
+  memory_type: MemoryType;
+  content: string;
+  status: MemoryStatus;
+  source: MemorySource | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** One AI/receipt line item belonging to an expense. */
+export type ExpenseItem = {
+  id: string;
+  expense_id: string;
+  name: string;
+  quantity: number;
+  unit_price: number | null;
+  amount: number;
+  category: ItemCategory;
+  confidence: number | null;
+  is_ai_generated: boolean;
+  is_user_edited: boolean;
+  created_at: string;
+};
+
+/** Who owes how much of a single line item. */
+export type ItemShare = {
+  item_id: string;
+  user_id: string;
+  share_amount: number;
+};
+
+// ---- AI Edge Function result shapes (returned to the app, not DB rows) ----
+
+export type AiConfidence = 'high' | 'medium' | 'low';
+
+/** A parsed expense from parse-expense, with names resolved to member ids. */
+export type ParsedExpense = {
+  title: string;
+  total_amount: number;
+  currency: string;
+  paid_by: string;
+  split_type: SplitType;
+  category: ExpenseCategory | null;
+  participants: { user_id: string; split_value: number | null }[];
+  confidence: AiConfidence;
+};
+
+/** parse-expense returns either a parsed expense or a clarification request. */
+export type ParseExpenseResult =
+  | { status: 'parsed'; expense: ParsedExpense }
+  | { status: 'clarification'; message: string };
+
+/** A memory match from retrieve-memories (vector search). */
+export type MemoryMatch = {
+  id: string;
+  content: string;
+  memory_type: string;
+  similarity: number;
+};
+
+/** Filters the AI extracted from a natural-language search query. */
+export type SearchFilters = {
+  category?: string;
+  date_from?: string;
+  date_to?: string;
+  paid_by_name?: string;
+  min_amount?: number;
+  max_amount?: number;
+};
+
+export type ExpenseSearchResult = {
+  expenses: Expense[];
+  filters_applied: SearchFilters;
+  summary: string;
+};
+
+/** A parsed receipt line item from parse-receipt. */
+export type ReceiptLineItem = {
+  description: string;
+  amount: number;
+  category: 'food' | 'drink' | 'tax' | 'service_charge' | 'other';
+  is_shared: boolean;
+};
+
+export type ReceiptParseResult = {
+  restaurant_name: string | null;
+  total_amount: number;
+  currency: string;
+  line_items: ReceiptLineItem[];
+  suggested_assignments: { item_description: string; suggested_for: string[] }[];
+  confidence: AiConfidence;
+  clarification_needed: string | null;
+};

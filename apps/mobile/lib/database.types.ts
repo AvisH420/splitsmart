@@ -15,6 +15,10 @@ import type {
   ExpenseStatus,
   GroupRole,
   InvitationStatus,
+  ItemCategory,
+  MemorySource,
+  MemoryStatus,
+  MemoryType,
   SplitType,
 } from './types';
 
@@ -184,6 +188,82 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['invitations']['Insert']>;
         Relationships: [];
       };
+      group_memories: {
+        Row: {
+          id: string;
+          group_id: string;
+          author_id: string;
+          subject_user_id: string | null;
+          memory_type: MemoryType;
+          content: string;
+          embedding_model: string | null;
+          status: MemoryStatus;
+          superseded_by: string | null;
+          source: MemorySource | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          author_id: string;
+          subject_user_id?: string | null;
+          memory_type: MemoryType;
+          content: string;
+          embedding_model?: string | null;
+          status?: MemoryStatus;
+          superseded_by?: string | null;
+          source?: MemorySource | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['group_memories']['Insert']>;
+        Relationships: [];
+      };
+      expense_items: {
+        Row: {
+          id: string;
+          expense_id: string;
+          name: string;
+          quantity: number;
+          unit_price: number | null;
+          amount: number;
+          category: ItemCategory;
+          confidence: number | null;
+          is_ai_generated: boolean;
+          is_user_edited: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          expense_id: string;
+          name: string;
+          quantity?: number;
+          unit_price?: number | null;
+          amount: number;
+          category?: ItemCategory;
+          confidence?: number | null;
+          is_ai_generated?: boolean;
+          is_user_edited?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['expense_items']['Insert']>;
+        Relationships: [];
+      };
+      item_shares: {
+        Row: {
+          item_id: string;
+          user_id: string;
+          share_amount: number;
+        };
+        Insert: {
+          item_id: string;
+          user_id: string;
+          share_amount: number;
+        };
+        Update: Partial<Database['public']['Tables']['item_shares']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -213,11 +293,35 @@ export type Database = {
         Args: { p_token: string };
         Returns: string;
       };
+      match_group_memories: {
+        Args: {
+          p_group_id: string;
+          query_embedding: number[];
+          match_count?: number;
+        };
+        Returns: {
+          id: string;
+          content: string;
+          memory_type: string;
+          similarity: number;
+        }[];
+      };
+      match_expenses: {
+        Args: {
+          p_group_id: string;
+          query_embedding: number[];
+          match_count?: number;
+        };
+        Returns: { id: string; similarity: number }[];
+      };
     };
     Enums: {
       group_role: GroupRole;
       expense_status: ExpenseStatus;
       expense_category: ExpenseCategory;
+      memory_type: MemoryType;
+      memory_status: MemoryStatus;
+      item_category: ItemCategory;
     };
     CompositeTypes: Record<string, never>;
   };
