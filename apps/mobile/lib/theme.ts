@@ -33,6 +33,7 @@ export type Colors = {
   glassHighlight: string;
   tabBarTint: string;
   hairline: string;
+  vignette: string; // faint edge-darkening for depth over the gradient
   white: string;
 };
 
@@ -64,6 +65,7 @@ const lightColors: Colors = {
   glassHighlight: 'rgba(255, 255, 255, 0.5)',
   tabBarTint: 'rgba(240, 234, 224, 0.4)',
   hairline: 'rgba(150, 130, 100, 0.28)',
+  vignette: 'rgba(110, 90, 60, 0.07)',
 
   white: '#FFFFFF',
 };
@@ -96,6 +98,7 @@ const darkColors: Colors = {
   glassHighlight: 'rgba(255, 255, 255, 0.06)',
   tabBarTint: 'rgba(28, 24, 18, 0.5)',
   hairline: 'rgba(150, 130, 100, 0.24)',
+  vignette: 'rgba(0, 0, 0, 0.35)',
 
   white: '#FFFFFF',
 };
