@@ -1,37 +1,46 @@
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
-import { theme } from '../theme';
+import { useTheme } from '../theme';
 
 /**
- * Frosted-glass surface for cards, modals and sheets.
- *
- * On iOS the container is transparent so a BlurView can actually frost the
- * warm gradient behind it; a faint warm tint + a top highlight hairline give
- * it body without going opaque. On Android (no real backdrop blur) it falls
- * back to the solid warm `glassBackground`.
+ * Frosted-glass surface for cards, modals and sheets. On iOS the container is
+ * transparent over a BlurView (tinted to the scheme) with a faint warm wash and
+ * a hairline border — so it frosts the background like architectural glass. On
+ * Android it falls back to the solid warm surface fill. Dark-mode aware.
  */
 export function GlassCard({
   children,
   style,
-  intensity = 24,
+  intensity = 22,
 }: {
   children: ReactNode;
   style?: ViewStyle | ViewStyle[];
   intensity?: number;
 }) {
+  const t = useTheme();
   const isIOS = Platform.OS === 'ios';
   return (
-    <View style={[styles.card, isIOS ? styles.cardIOS : styles.cardAndroid, style]}>
+    <View
+      style={[
+        styles.card,
+        { borderColor: t.colors.glassBorder, ...t.shadows.sm },
+        isIOS ? styles.transparent : { backgroundColor: t.colors.glassBackground },
+        style,
+      ]}
+    >
       {isIOS ? (
         <>
           <BlurView
             intensity={intensity}
-            tint="light"
+            tint={t.blurTint}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
-          <View style={[StyleSheet.absoluteFill, styles.tint]} pointerEvents="none" />
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: t.colors.glassTint }]}
+            pointerEvents="none"
+          />
         </>
       ) : null}
       {children}
@@ -41,13 +50,9 @@ export function GlassCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: theme.radii.lg,
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.glassBorder,
     overflow: 'hidden',
-    ...theme.shadows.sm,
   },
-  cardIOS: { backgroundColor: 'transparent' },
-  cardAndroid: { backgroundColor: theme.colors.glassBackground },
-  tint: { backgroundColor: theme.colors.glassTint },
+  transparent: { backgroundColor: 'transparent' },
 });

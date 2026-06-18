@@ -7,7 +7,7 @@ import {
   View,
   type TextInputProps,
 } from 'react-native';
-import { theme } from '../theme';
+import { useTheme } from '../theme';
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
@@ -15,8 +15,8 @@ type FocusHandler = NonNullable<TextInputProps['onFocus']>;
 type BlurHandler = NonNullable<TextInputProps['onBlur']>;
 
 /**
- * Themed text field. Shows an optional label above and animates its border
- * colour to the accent on focus. Forwards all TextInput props.
+ * Themed text field. Optional label above; border animates to the accent on
+ * focus. Forwards all TextInput props. Dark-mode aware.
  */
 export function Input({
   label,
@@ -25,18 +25,15 @@ export function Input({
   onBlur,
   ...props
 }: TextInputProps & { label?: string }) {
+  const t = useTheme();
   const focus = useRef(new Animated.Value(0)).current;
 
   const animate = (toValue: number) =>
-    Animated.timing(focus, {
-      toValue,
-      duration: 150,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(focus, { toValue, duration: 150, useNativeDriver: false }).start();
 
   const borderColor = focus.interpolate({
     inputRange: [0, 1],
-    outputRange: [theme.colors.surfaceBorder, theme.colors.accent],
+    outputRange: [t.colors.surfaceBorder, t.colors.accent],
   });
 
   const handleFocus: FocusHandler = (e) => {
@@ -50,32 +47,32 @@ export function Input({
 
   return (
     <View style={styles.wrap}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? (
+        <Text style={[styles.label, { color: t.colors.textSecondary }]}>{label}</Text>
+      ) : null}
       <AnimatedTextInput
-        placeholderTextColor={theme.colors.textTertiary}
+        placeholderTextColor={t.colors.textTertiary}
         {...props}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        style={[styles.input, { borderColor }, style]}
+        style={[
+          styles.input,
+          { backgroundColor: t.colors.surface, color: t.colors.textPrimary, borderColor },
+          style,
+        ]}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: theme.spacing.xs },
-  label: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.textSecondary,
-  },
+  wrap: { gap: 4 },
+  label: { fontSize: 13, fontWeight: '500', letterSpacing: 0.3 },
   input: {
-    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderRadius: theme.radii.md,
-    paddingHorizontal: theme.spacing.md,
+    borderRadius: 12,
+    paddingHorizontal: 12,
     paddingVertical: 11,
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textPrimary,
+    fontSize: 15,
   },
 });

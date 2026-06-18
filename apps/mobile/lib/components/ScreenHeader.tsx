@@ -2,12 +2,12 @@ import { Feather } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { theme } from '../theme';
+import { useTheme } from '../theme';
 
 /**
- * Replaces the native navigation header. Large heavy title on the left, an
- * optional back chevron, and arbitrary right-side icon buttons. Subtle bottom
- * border. Screens set headerShown: false and render this at the top instead.
+ * Replaces the native navigation header. An editorial serif title on the left,
+ * an optional back chevron, and arbitrary right-side icon buttons, over a
+ * hairline bottom border. Dark-mode aware.
  */
 export function ScreenHeader({
   title,
@@ -18,15 +18,30 @@ export function ScreenHeader({
   onBack?: () => void;
   right?: ReactNode;
 }) {
+  const t = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.header, { paddingTop: insets.top + theme.spacing.sm }]}>
+    <View
+      style={[
+        styles.header,
+        {
+          paddingTop: insets.top + t.spacing.sm,
+          borderBottomColor: t.colors.hairline,
+        },
+      ]}
+    >
       {onBack ? (
         <Pressable onPress={onBack} hitSlop={10} style={styles.back}>
-          <Feather name="chevron-left" size={26} color={theme.colors.textPrimary} />
+          <Feather name="chevron-left" size={26} color={t.colors.textPrimary} />
         </Pressable>
       ) : null}
-      <Text style={styles.title} numberOfLines={1}>
+      <Text
+        style={[
+          styles.title,
+          { color: t.colors.textPrimary, fontFamily: t.typography.fonts.serif },
+        ]}
+        numberOfLines={1}
+      >
         {title}
       </Text>
       {right ? <View style={styles.right}>{right}</View> : null}
@@ -38,22 +53,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.surfaceBorder,
   },
-  back: { marginLeft: -theme.spacing.sm },
+  back: { marginLeft: -8 },
   title: {
     flex: 1,
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: theme.typography.weights.heavy,
-    color: theme.colors.textPrimary,
+    fontSize: 30,
+    fontWeight: '600',
+    letterSpacing: -0.4,
   },
-  right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.lg,
-  },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 16 },
 });
