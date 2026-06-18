@@ -230,7 +230,7 @@ export default function ReceiptScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {!parsed && !parsing ? (
-              <AnimatedScreen>
+              <AnimatedScreen variant="modal">
                 <View style={styles.intro}>
                   <View style={styles.iconCircle}>
                     <Feather name="camera" size={28} color={t.colors.accent} />
@@ -270,7 +270,7 @@ export default function ReceiptScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             {parsed && !parsing ? (
-              <AnimatedScreen>
+              <AnimatedScreen variant="modal">
                 <GlassCard style={styles.headerCard}>
                   <Text style={styles.restaurant}>{parsed.restaurant_name || 'Receipt'}</Text>
                   <Text style={styles.totalNote}>

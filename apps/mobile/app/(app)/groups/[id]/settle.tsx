@@ -152,7 +152,7 @@ export default function SettleScreen() {
       {loading ? (
         <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : loadError ? (
-        <AnimatedScreen>
+        <AnimatedScreen variant="modal">
           <ScrollView contentContainerStyle={styles.content}>
             <GlassCard style={styles.errorCard}>
               <Text style={styles.errorTitle}>Could not load balances</Text>
@@ -162,7 +162,7 @@ export default function SettleScreen() {
           </ScrollView>
         </AnimatedScreen>
       ) : (
-        <AnimatedScreen>
+        <AnimatedScreen variant="modal">
           <KeyboardAvoidingView
             style={styles.fill}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}

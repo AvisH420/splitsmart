@@ -232,7 +232,7 @@ export default function ExpenseFormScreen() {
       {loading ? (
         <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : (
-        <AnimatedScreen>
+        <AnimatedScreen variant="modal">
           <KeyboardAvoidingView
             style={styles.fill}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}

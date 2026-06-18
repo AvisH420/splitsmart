@@ -56,7 +56,7 @@ export default function InviteMemberScreen() {
     <GradientBackground>
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenHeader title="Invite member" onBack={() => router.back()} />
-      <AnimatedScreen>
+      <AnimatedScreen variant="modal">
         <KeyboardAvoidingView
           style={styles.fill}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

@@ -7,7 +7,6 @@ import {
 } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Keyboard,
   Pressable,
   ScrollView,
@@ -28,7 +27,9 @@ import { GlassCard } from '../../../../lib/components/GlassCard';
 import { GradientBackground } from '../../../../lib/components/GradientBackground';
 import { Input } from '../../../../lib/components/Input';
 import { PressableScale } from '../../../../lib/components/PressableScale';
+import { Pulse } from '../../../../lib/components/Pulse';
 import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
+import { Skeleton } from '../../../../lib/components/Skeleton';
 import { formatMoney } from '../../../../lib/format';
 import {
   listExpenses,
@@ -146,7 +147,14 @@ export default function GroupDetailScreen() {
     return (
       <GradientBackground>
         {header}
-        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
+        <View style={styles.skeletonWrap}>
+          <Skeleton height={180} radius={t.radii.lg} />
+          <Skeleton height={16} width="40%" />
+          <Skeleton height={120} radius={t.radii.lg} />
+          <Skeleton height={16} width="40%" />
+          <Skeleton height={72} radius={t.radii.lg} />
+          <Skeleton height={72} radius={t.radii.lg} />
+        </View>
       </GradientBackground>
     );
   }
@@ -206,12 +214,13 @@ export default function GroupDetailScreen() {
                 </View>
               </View>
 
-              <Button
-                title="Settle up"
-                variant="secondary"
-                onPress={() => router.push(`/groups/${id}/settle`)}
-                style={styles.heroButton}
-              />
+              <Pulse active={myNet !== 0} style={styles.heroButton}>
+                <Button
+                  title="Settle up"
+                  variant="secondary"
+                  onPress={() => router.push(`/groups/${id}/settle`)}
+                />
+              </Pulse>
             </GlassCard>
 
             {/* Balances */}
@@ -393,6 +402,7 @@ const makeStyles = (t: Theme) =>
   StyleSheet.create({
   content: { padding: t.spacing.xl, gap: t.spacing.lg, paddingBottom: t.spacing.xxxl },
   center: { flex: 1 },
+  skeletonWrap: { padding: t.spacing.xl, gap: t.spacing.md },
   error: {
     color: t.colors.negative,
     fontSize: t.typography.sizes.sm,

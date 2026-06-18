@@ -41,7 +41,7 @@ export default function NewGroupScreen() {
     <GradientBackground>
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenHeader title="New group" onBack={() => router.back()} />
-      <AnimatedScreen>
+      <AnimatedScreen variant="modal">
         <KeyboardAvoidingView
           style={styles.fill}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

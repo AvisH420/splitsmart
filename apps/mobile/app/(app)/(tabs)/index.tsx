@@ -1,14 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../lib/auth-context';
 import { AnimatedListItem } from '../../../lib/components/AnimatedListItem';
 import { AnimatedScreen } from '../../../lib/components/AnimatedScreen';
@@ -17,6 +10,7 @@ import { GlassCard } from '../../../lib/components/GlassCard';
 import { GradientBackground } from '../../../lib/components/GradientBackground';
 import { PressableScale } from '../../../lib/components/PressableScale';
 import { ScreenHeader } from '../../../lib/components/ScreenHeader';
+import { Skeleton } from '../../../lib/components/Skeleton';
 import { listGroups } from '../../../lib/repositories/groups';
 import { useTheme, type Theme } from '../../../lib/theme';
 import type { Group } from '../../../lib/types';
@@ -64,7 +58,11 @@ export default function GroupsScreen() {
       />
 
       {loading ? (
-        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
+        <View style={styles.skeletonWrap}>
+          <Skeleton height={68} radius={t.radii.lg} />
+          <Skeleton height={68} radius={t.radii.lg} />
+          <Skeleton height={68} radius={t.radii.lg} />
+        </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
@@ -114,6 +112,7 @@ const makeStyles = (t: Theme) =>
     fontSize: t.typography.sizes.sm,
     padding: t.spacing.xl,
   },
+  skeletonWrap: { padding: t.spacing.xl, gap: t.spacing.md },
   listContent: {
     padding: t.spacing.xl,
     gap: t.spacing.md,
