@@ -12,7 +12,7 @@ import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { formatMoney } from '../../../lib/format';
 import { listActivity } from '../../../lib/repositories/activity';
 import { listGroups } from '../../../lib/repositories/groups';
-import { theme } from '../../../lib/theme';
+import { useTheme, type Theme } from '../../../lib/theme';
 import type { ActivityItem } from '../../../lib/types';
 
 type FeedItem = ActivityItem & { groupId: string; groupName: string };
@@ -39,6 +39,8 @@ function describe(item: ActivityItem): { name: string; text: string; amount?: st
 }
 
 export default function GlobalActivityScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const router = useRouter();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function GlobalActivityScreen() {
     <GradientBackground>
       <ScreenHeader title="Activity" />
       {loading ? (
-        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
@@ -93,7 +95,7 @@ export default function GlobalActivityScreen() {
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Feather name="activity" size={40} color={theme.colors.textTertiary} />
+              <Feather name="activity" size={40} color={t.colors.textTertiary} />
               <Text style={styles.emptyTitle}>No activity yet</Text>
               <Text style={styles.emptyBody}>
                 Expenses and settlements across your groups will show up here.
@@ -126,42 +128,43 @@ export default function GlobalActivityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   center: { flex: 1 },
   error: {
-    color: theme.colors.negative,
-    fontSize: theme.typography.sizes.sm,
-    padding: theme.spacing.xl,
+    color: t.colors.negative,
+    fontSize: t.typography.sizes.sm,
+    padding: t.spacing.xl,
   },
   listContent: {
-    padding: theme.spacing.xl,
-    gap: theme.spacing.md,
-    paddingBottom: theme.spacing.xxxl * 2,
+    padding: t.spacing.xl,
+    gap: t.spacing.md,
+    paddingBottom: t.spacing.xxxl * 2,
   },
-  emptyContent: { flexGrow: 1, justifyContent: 'center', padding: theme.spacing.xl },
-  empty: { alignItems: 'center', gap: theme.spacing.md },
+  emptyContent: { flexGrow: 1, justifyContent: 'center', padding: t.spacing.xl },
+  empty: { alignItems: 'center', gap: t.spacing.md },
   emptyTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.lg,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
   emptyBody: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.base,
+    color: t.colors.textSecondary,
     textAlign: 'center',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    padding: theme.spacing.md,
+    gap: t.spacing.md,
+    padding: t.spacing.md,
   },
   body: { flex: 1, gap: 2 },
-  text: { fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
-  meta: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  text: { fontSize: t.typography.sizes.base, color: t.colors.textPrimary },
+  meta: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
   amount: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
 });

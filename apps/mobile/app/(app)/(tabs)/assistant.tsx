@@ -28,7 +28,7 @@ import { listGroups } from '../../../lib/repositories/groups';
 import { listMembers } from '../../../lib/repositories/members';
 import { deleteMemory, listMemories } from '../../../lib/repositories/memories';
 import { computeSplit, validateSplit, type SplitInput } from '../../../lib/splits';
-import { theme } from '../../../lib/theme';
+import { useTheme, type Theme } from '../../../lib/theme';
 import type {
   ExpenseSearchResult,
   Group,
@@ -38,6 +38,8 @@ import type {
 } from '../../../lib/types';
 
 export default function AssistantScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const { group_id } = useLocalSearchParams<{ group_id?: string }>();
   const router = useRouter();
 
@@ -220,7 +222,7 @@ export default function AssistantScreen() {
               >
                 <GlassCard style={styles.pickerRow}>
                   <Text style={styles.pickerName}>{g.name}</Text>
-                  <Feather name="chevron-right" size={20} color={theme.colors.textTertiary} />
+                  <Feather name="chevron-right" size={20} color={t.colors.textTertiary} />
                 </GlassCard>
               </PressableScale>
             ))}
@@ -276,7 +278,7 @@ export default function AssistantScreen() {
                   {clarification ? (
                     <GlassCard style={styles.clarifyCard}>
                       <View style={styles.bubbleHead}>
-                        <Feather name="help-circle" size={16} color={theme.colors.warning} />
+                        <Feather name="help-circle" size={16} color={t.colors.warning} />
                         <Text style={styles.clarifyTitle}>A bit more info</Text>
                       </View>
                       <Text style={styles.clarifyText}>{clarification}</Text>
@@ -292,7 +294,7 @@ export default function AssistantScreen() {
                   {parsed ? (
                     <GlassCard style={styles.bubble}>
                       <View style={styles.bubbleHead}>
-                        <Feather name="zap" size={16} color={theme.colors.accent} />
+                        <Feather name="zap" size={16} color={t.colors.accent} />
                         <Text style={styles.bubbleHeadText}>Here's what I understood</Text>
                       </View>
                       <View style={styles.bubbleTop}>
@@ -350,7 +352,7 @@ export default function AssistantScreen() {
                             {m.content}
                           </Text>
                           <Pressable onPress={() => onDeleteMemory(m.id)} hitSlop={8}>
-                            <Feather name="x" size={16} color={theme.colors.textTertiary} />
+                            <Feather name="x" size={16} color={t.colors.textTertiary} />
                           </Pressable>
                         </View>
                       ))}
@@ -410,7 +412,7 @@ export default function AssistantScreen() {
                     <>
                       {searchResult.summary ? (
                         <GlassCard style={styles.summaryCard}>
-                          <Feather name="zap" size={16} color={theme.colors.accent} />
+                          <Feather name="zap" size={16} color={t.colors.accent} />
                           <Text style={styles.summary}>{searchResult.summary}</Text>
                         </GlassCard>
                       ) : null}
@@ -470,6 +472,7 @@ function Chip({
   active: boolean;
   onPress: () => void;
 }) {
+  const styles = makeStyles(useTheme());
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -477,154 +480,155 @@ function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   fill: { flex: 1 },
   content: {
-    padding: theme.spacing.xl,
-    gap: theme.spacing.md,
-    paddingBottom: theme.spacing.xxxl * 2,
+    padding: t.spacing.xl,
+    gap: t.spacing.md,
+    paddingBottom: t.spacing.xxxl * 2,
   },
-  pickerLabel: { fontSize: theme.typography.sizes.base, color: theme.colors.textSecondary },
+  pickerLabel: { fontSize: t.typography.sizes.base, color: t.colors.textSecondary },
   pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: theme.spacing.lg,
+    padding: t.spacing.lg,
   },
   pickerName: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textPrimary,
   },
   segment: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.md,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.md,
     padding: 3,
   },
   segmentItem: {
     flex: 1,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: t.spacing.sm,
     alignItems: 'center',
-    borderRadius: theme.radii.sm,
+    borderRadius: t.radii.sm,
   },
-  segmentActive: { backgroundColor: theme.colors.accent },
+  segmentActive: { backgroundColor: t.colors.accent },
   segmentText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.accent,
-    fontWeight: theme.typography.weights.semibold,
+    fontSize: t.typography.sizes.sm,
+    color: t.colors.accent,
+    fontWeight: t.typography.weights.semibold,
   },
-  segmentTextActive: { color: theme.colors.white },
+  segmentTextActive: { color: t.colors.white },
   multiline: { minHeight: 84, textAlignVertical: 'top' },
-  gap: { marginTop: theme.spacing.xs },
-  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
-  warn: { color: theme.colors.warning, fontSize: theme.typography.sizes.sm },
-  clarifyCard: { padding: theme.spacing.lg, gap: theme.spacing.sm },
-  bubbleHead: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  gap: { marginTop: t.spacing.xs },
+  error: { color: t.colors.negative, fontSize: t.typography.sizes.sm },
+  warn: { color: t.colors.warning, fontSize: t.typography.sizes.sm },
+  clarifyCard: { padding: t.spacing.lg, gap: t.spacing.sm },
+  bubbleHead: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.xs },
   clarifyTitle: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.warning,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.warning,
   },
-  clarifyText: { fontSize: theme.typography.sizes.base, color: theme.colors.textSecondary },
-  bubble: { padding: theme.spacing.lg, gap: theme.spacing.sm },
+  clarifyText: { fontSize: t.typography.sizes.base, color: t.colors.textSecondary },
+  bubble: { padding: t.spacing.lg, gap: t.spacing.sm },
   bubbleHeadText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.accent,
   },
   bubbleTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bubbleTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.lg,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
     flex: 1,
   },
   bubbleAmount: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.lg,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.accent,
   },
-  bubbleMeta: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
-  shares: { gap: theme.spacing.xs, marginTop: theme.spacing.xs },
-  shareRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  shareName: { flex: 1, fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
+  bubbleMeta: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
+  shares: { gap: t.spacing.xs, marginTop: t.spacing.xs },
+  shareRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm },
+  shareName: { flex: 1, fontSize: t.typography.sizes.base, color: t.colors.textPrimary },
   shareAmount: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textPrimary,
   },
-  memoryHead: { marginTop: theme.spacing.md },
+  memoryHead: { marginTop: t.spacing.md },
   sectionTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textSecondary,
   },
-  sectionHint: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
-  listCard: { paddingHorizontal: theme.spacing.lg },
+  sectionHint: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
+  listCard: { paddingHorizontal: t.spacing.lg },
   memoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    gap: t.spacing.md,
+    paddingVertical: t.spacing.md,
   },
-  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.hairline },
-  memoryContent: { flex: 1, fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
-  memoryEmpty: { color: theme.colors.textTertiary, fontSize: theme.typography.sizes.sm },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.colors.hairline },
+  memoryContent: { flex: 1, fontSize: t.typography.sizes.base, color: t.colors.textPrimary },
+  memoryEmpty: { color: t.colors.textTertiary, fontSize: t.typography.sizes.sm },
   aboutLabel: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
+    fontSize: t.typography.sizes.sm,
+    color: t.colors.textSecondary,
+    marginTop: t.spacing.xs,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm },
   chip: {
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.full,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs + 2,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.full,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs + 2,
   },
-  chipActive: { backgroundColor: theme.colors.accent },
+  chipActive: { backgroundColor: t.colors.accent },
   chipText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.medium,
+    color: t.colors.accent,
   },
-  chipTextActive: { color: theme.colors.white },
+  chipTextActive: { color: t.colors.white },
   summaryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
-    padding: theme.spacing.lg,
+    gap: t.spacing.sm,
+    padding: t.spacing.lg,
   },
   summary: {
     flex: 1,
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textPrimary,
   },
   filterChip: {
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.full,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.full,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
   },
   filterChipText: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.xs,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.accent,
   },
-  resultList: { gap: theme.spacing.sm },
-  resultRow: { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.lg },
+  resultList: { gap: t.spacing.sm },
+  resultRow: { flexDirection: 'row', alignItems: 'center', padding: t.spacing.lg },
   resultMain: { flex: 1, gap: 2 },
   resultTitle: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textPrimary,
   },
-  resultMeta: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  resultMeta: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
   resultAmount: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
 });

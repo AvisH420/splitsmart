@@ -6,7 +6,7 @@ import { useTheme } from '../theme';
 /**
  * Frosted-glass surface for cards, modals and sheets. On iOS the container is
  * transparent over a BlurView (tinted to the scheme) with a faint warm wash and
- * a hairline border — so it frosts the background like architectural glass. On
+ * a hairline border - so it frosts the background like architectural glass. On
  * Android it falls back to the solid warm surface fill. Dark-mode aware.
  */
 export function GlassCard({

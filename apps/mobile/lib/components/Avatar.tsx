@@ -1,9 +1,9 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { theme } from '../theme';
+import { useTheme } from '../theme';
 
 /**
  * Circular avatar: shows the profile photo when `uri` is set, otherwise the
- * person's initials on a tinted circle. Used anywhere a member is named.
+ * person's initials on a tinted circle. Dark-mode aware.
  */
 export function Avatar({
   name,
@@ -14,15 +14,23 @@ export function Avatar({
   uri?: string | null;
   size?: number;
 }) {
+  const t = useTheme();
   const dimension = { width: size, height: size, borderRadius: size / 2 };
 
   if (uri) {
-    return <Image source={{ uri }} style={[styles.image, dimension]} />;
+    return (
+      <Image
+        source={{ uri }}
+        style={[dimension, { backgroundColor: t.colors.accentSubtle }]}
+      />
+    );
   }
 
   return (
-    <View style={[styles.fallback, dimension]}>
-      <Text style={[styles.initials, { fontSize: size * 0.4 }]}>{initials(name)}</Text>
+    <View style={[dimension, styles.fallback, { backgroundColor: t.colors.accentSubtle }]}>
+      <Text style={{ fontSize: size * 0.4, fontWeight: '700', color: t.colors.accent }}>
+        {initials(name)}
+      </Text>
     </View>
   );
 }
@@ -36,11 +44,5 @@ function initials(name: string): string {
 }
 
 const styles = StyleSheet.create({
-  image: { backgroundColor: theme.colors.accentSubtle },
-  fallback: {
-    backgroundColor: theme.colors.accentSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initials: { color: theme.colors.accent, fontWeight: '700' },
+  fallback: { alignItems: 'center', justifyContent: 'center' },
 });

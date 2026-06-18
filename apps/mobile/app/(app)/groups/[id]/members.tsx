@@ -19,10 +19,12 @@ import {
   getPendingInvitation,
   inviteToGroup,
 } from '../../../../lib/repositories/invitations';
-import { theme } from '../../../../lib/theme';
+import { useTheme, type Theme } from '../../../../lib/theme';
 import { inviteUrl } from '../../../../lib/use-invite-link';
 
 export default function InviteMemberScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -97,10 +99,11 @@ export default function InviteMemberScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   fill: { flex: 1 },
-  content: { padding: theme.spacing.xl, gap: theme.spacing.md },
-  hint: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
-  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
-  submit: { marginTop: theme.spacing.sm },
+  content: { padding: t.spacing.xl, gap: t.spacing.md },
+  hint: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
+  error: { color: t.colors.negative, fontSize: t.typography.sizes.sm },
+  submit: { marginTop: t.spacing.sm },
 });

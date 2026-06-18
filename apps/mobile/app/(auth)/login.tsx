@@ -16,9 +16,11 @@ import { GlassCard } from '../../lib/components/GlassCard';
 import { GradientBackground } from '../../lib/components/GradientBackground';
 import { Input } from '../../lib/components/Input';
 import { supabase } from '../../lib/supabase';
-import { theme } from '../../lib/theme';
+import { useTheme, type Theme } from '../../lib/theme';
 
 export default function LoginScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -98,27 +100,30 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   fill: { flex: 1 },
   content: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: theme.spacing.xl,
-    gap: theme.spacing.md,
+    padding: t.spacing.xl,
+    gap: t.spacing.md,
   },
   title: {
-    fontSize: theme.typography.sizes.display,
-    fontWeight: theme.typography.weights.heavy,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.giant,
+    fontFamily: t.typography.fonts.serif,
+    fontWeight: t.typography.weights.semibold,
+    letterSpacing: t.typography.tracking.tight,
+    color: t.colors.textPrimary,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.base,
+    color: t.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: theme.spacing.sm,
+    marginBottom: t.spacing.sm,
   },
-  card: { padding: theme.spacing.xl, gap: theme.spacing.md },
-  submit: { marginTop: theme.spacing.sm },
-  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
+  card: { padding: t.spacing.xl, gap: t.spacing.md },
+  submit: { marginTop: t.spacing.sm },
+  error: { color: t.colors.negative, fontSize: t.typography.sizes.sm },
 });

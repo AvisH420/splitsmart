@@ -15,9 +15,11 @@ import { GradientBackground } from '../../../lib/components/GradientBackground';
 import { Input } from '../../../lib/components/Input';
 import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { createGroup } from '../../../lib/repositories/groups';
-import { theme } from '../../../lib/theme';
+import { useTheme, type Theme } from '../../../lib/theme';
 
 export default function NewGroupScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const router = useRouter();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -78,10 +80,11 @@ export default function NewGroupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   fill: { flex: 1 },
-  content: { padding: theme.spacing.xl, gap: theme.spacing.md },
-  hint: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
-  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
-  submit: { marginTop: theme.spacing.sm },
+  content: { padding: t.spacing.xl, gap: t.spacing.md },
+  hint: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
+  error: { color: t.colors.negative, fontSize: t.typography.sizes.sm },
+  submit: { marginTop: t.spacing.sm },
 });

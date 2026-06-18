@@ -8,7 +8,7 @@ import { GradientBackground } from '../../../../lib/components/GradientBackgroun
 import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import { formatMoney } from '../../../../lib/format';
 import { listActivity } from '../../../../lib/repositories/activity';
-import { theme } from '../../../../lib/theme';
+import { useTheme, type Theme } from '../../../../lib/theme';
 import type { ActivityItem } from '../../../../lib/types';
 
 function describe(item: ActivityItem): { name: string; text: string; amount?: string } {
@@ -33,6 +33,8 @@ function describe(item: ActivityItem): { name: string; text: string; amount?: st
 }
 
 export default function ActivityScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [items, setItems] = useState<ActivityItem[]>([]);
@@ -58,7 +60,7 @@ export default function ActivityScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenHeader title="Activity" onBack={() => router.back()} />
       {loading ? (
-        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
@@ -98,32 +100,33 @@ export default function ActivityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   center: { flex: 1 },
   error: {
-    color: theme.colors.negative,
-    fontSize: theme.typography.sizes.sm,
-    padding: theme.spacing.xl,
+    color: t.colors.negative,
+    fontSize: t.typography.sizes.sm,
+    padding: t.spacing.xl,
   },
-  listContent: { padding: theme.spacing.xl, paddingBottom: theme.spacing.xxxl },
+  listContent: { padding: t.spacing.xl, paddingBottom: t.spacing.xxxl },
   emptyContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { color: theme.colors.textTertiary, fontSize: theme.typography.sizes.base },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
-  rail: { width: 40, alignItems: 'center', paddingBottom: theme.spacing.lg },
+  empty: { color: t.colors.textTertiary, fontSize: t.typography.sizes.base },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: t.spacing.md },
+  rail: { width: 40, alignItems: 'center', paddingBottom: t.spacing.lg },
   line: {
     position: 'absolute',
     top: 40,
-    bottom: -theme.spacing.lg,
+    bottom: -t.spacing.lg,
     width: StyleSheet.hairlineWidth * 2,
-    backgroundColor: theme.colors.hairline,
+    backgroundColor: t.colors.hairline,
   },
-  body: { flex: 1, gap: 2, paddingTop: theme.spacing.xs },
-  text: { fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
-  date: { fontSize: theme.typography.sizes.xs, color: theme.colors.textTertiary },
+  body: { flex: 1, gap: 2, paddingTop: t.spacing.xs },
+  text: { fontSize: t.typography.sizes.base, color: t.colors.textPrimary },
+  date: { fontSize: t.typography.sizes.xs, color: t.colors.textTertiary },
   amount: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
-    paddingTop: theme.spacing.xs,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
+    paddingTop: t.spacing.xs,
   },
 });

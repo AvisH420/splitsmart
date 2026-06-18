@@ -1,7 +1,7 @@
 import { Platform, useColorScheme } from 'react-native';
 
 /**
- * Design tokens for SplitSmart. Two palettes — a warm linen light mode and a
+ * Design tokens for SplitSmart. Two palettes - a warm linen light mode and a
  * warm charcoal dark mode (think aged paper by day, a dimly lit room at night,
  * never cold grey). Scale tokens (spacing, radii, type, shadows) are shared.
  *
@@ -38,7 +38,7 @@ export type Colors = {
 };
 
 const lightColors: Colors = {
-  // Warm linen — soft light from above (lighter top, deeper bottom).
+  // Warm linen - soft light from above (lighter top, deeper bottom).
   backgroundStart: '#ECE6D9',
   backgroundEnd: '#DCD3C1',
 
@@ -71,7 +71,7 @@ const lightColors: Colors = {
 };
 
 const darkColors: Colors = {
-  // Warm charcoal — a dimly lit room, never cold.
+  // Warm charcoal - a dimly lit room, never cold.
   backgroundStart: '#201C16',
   backgroundEnd: '#15120D',
 

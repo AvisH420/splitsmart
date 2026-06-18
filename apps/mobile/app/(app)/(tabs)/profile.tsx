@@ -22,10 +22,12 @@ import { GradientBackground } from '../../../lib/components/GradientBackground';
 import { Input } from '../../../lib/components/Input';
 import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { getProfile, updateProfile, uploadAvatar } from '../../../lib/repositories/profiles';
-import { theme } from '../../../lib/theme';
+import { useTheme, type Theme } from '../../../lib/theme';
 import type { Profile } from '../../../lib/types';
 
 export default function ProfileScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const { session, signOut } = useAuth();
   const userId = session?.user?.id;
 
@@ -104,7 +106,7 @@ export default function ProfileScreen() {
     <GradientBackground>
       <ScreenHeader title="Profile" />
       {loading ? (
-        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : (
         <AnimatedScreen>
           <KeyboardAvoidingView
@@ -161,32 +163,33 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   fill: { flex: 1 },
   content: {
-    padding: theme.spacing.xl,
-    gap: theme.spacing.md,
-    paddingBottom: theme.spacing.xxxl * 2,
+    padding: t.spacing.xl,
+    gap: t.spacing.md,
+    paddingBottom: t.spacing.xxxl * 2,
   },
   center: { flex: 1 },
-  avatarBlock: { alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.md },
+  avatarBlock: { alignItems: 'center', gap: t.spacing.sm, marginBottom: t.spacing.md },
   changePhoto: {
-    color: theme.colors.accent,
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
+    color: t.colors.accent,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.semibold,
   },
-  readonlyBlock: { gap: theme.spacing.xs },
+  readonlyBlock: { gap: t.spacing.xs },
   readonlyLabel: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.medium,
+    color: t.colors.textSecondary,
   },
   readonlyValue: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textPrimary,
-    paddingVertical: theme.spacing.sm,
+    fontSize: t.typography.sizes.base,
+    color: t.colors.textPrimary,
+    paddingVertical: t.spacing.sm,
   },
-  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
-  saved: { color: theme.colors.positive, fontSize: theme.typography.sizes.sm },
-  gap: { marginTop: theme.spacing.sm },
+  error: { color: t.colors.negative, fontSize: t.typography.sizes.sm },
+  saved: { color: t.colors.positive, fontSize: t.typography.sizes.sm },
+  gap: { marginTop: t.spacing.sm },
 });

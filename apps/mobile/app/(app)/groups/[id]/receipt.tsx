@@ -28,7 +28,7 @@ import { parseReceipt } from '../../../../lib/repositories/ai';
 import { saveExpense } from '../../../../lib/repositories/expenses';
 import { saveReceiptItems, type ReceiptItemWrite } from '../../../../lib/repositories/items';
 import { listMembers } from '../../../../lib/repositories/members';
-import { theme } from '../../../../lib/theme';
+import { useTheme, type Theme } from '../../../../lib/theme';
 import type {
   GroupMemberWithProfile,
   ItemCategory,
@@ -51,6 +51,8 @@ function resolveName(name: string, members: GroupMemberWithProfile[]): string | 
 }
 
 export default function ReceiptScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -231,7 +233,7 @@ export default function ReceiptScreen() {
               <AnimatedScreen>
                 <View style={styles.intro}>
                   <View style={styles.iconCircle}>
-                    <Feather name="camera" size={28} color={theme.colors.accent} />
+                    <Feather name="camera" size={28} color={t.colors.accent} />
                   </View>
                   <Text style={styles.introTitle}>Scan a receipt</Text>
                   <Text style={styles.introBody}>
@@ -260,7 +262,7 @@ export default function ReceiptScreen() {
 
             {parsing ? (
               <View style={styles.loading}>
-                <ActivityIndicator size="large" color={theme.colors.accent} />
+                <ActivityIndicator size="large" color={t.colors.accent} />
                 <Text style={styles.loadingText}>Reading your receipt...</Text>
               </View>
             ) : null}
@@ -370,6 +372,7 @@ function Chip({
   active: boolean;
   onPress: () => void;
 }) {
+  const styles = makeStyles(useTheme());
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -377,104 +380,105 @@ function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   fill: { flex: 1 },
-  content: { padding: theme.spacing.xl, gap: theme.spacing.md, paddingBottom: theme.spacing.xxxl },
-  intro: { alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.md },
+  content: { padding: t.spacing.xl, gap: t.spacing.md, paddingBottom: t.spacing.xxxl },
+  intro: { alignItems: 'center', gap: t.spacing.sm, marginBottom: t.spacing.md },
   iconCircle: {
     width: 64,
     height: 64,
-    borderRadius: theme.radii.full,
-    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: t.radii.full,
+    backgroundColor: t.colors.accentSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.xs,
+    marginBottom: t.spacing.xs,
   },
   introTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.lg,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
   introBody: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.base,
+    color: t.colors.textSecondary,
     textAlign: 'center',
   },
-  gap: { marginTop: theme.spacing.sm },
-  loading: { alignItems: 'center', gap: theme.spacing.md, paddingVertical: theme.spacing.xxxl },
-  loadingText: { color: theme.colors.textSecondary, fontSize: theme.typography.sizes.base },
-  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
-  warn: { color: theme.colors.warning, fontSize: theme.typography.sizes.sm },
-  headerCard: { padding: theme.spacing.lg },
+  gap: { marginTop: t.spacing.sm },
+  loading: { alignItems: 'center', gap: t.spacing.md, paddingVertical: t.spacing.xxxl },
+  loadingText: { color: t.colors.textSecondary, fontSize: t.typography.sizes.base },
+  error: { color: t.colors.negative, fontSize: t.typography.sizes.sm },
+  warn: { color: t.colors.warning, fontSize: t.typography.sizes.sm },
+  headerCard: { padding: t.spacing.lg },
   restaurant: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.lg,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
-  totalNote: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary, marginTop: 2 },
+  totalNote: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary, marginTop: 2 },
   sectionTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textSecondary,
+    marginTop: t.spacing.sm,
   },
-  itemList: { gap: theme.spacing.sm },
-  itemCard: { padding: theme.spacing.lg, gap: theme.spacing.sm },
+  itemList: { gap: t.spacing.sm },
+  itemCard: { padding: t.spacing.lg, gap: t.spacing.sm },
   itemHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemDesc: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.medium,
+    color: t.colors.textPrimary,
     flex: 1,
   },
   itemAmount: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
   itemBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.full,
-    paddingHorizontal: theme.spacing.sm,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.full,
+    paddingHorizontal: t.spacing.sm,
     paddingVertical: 2,
   },
   itemBadgeText: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.xs,
+    color: t.colors.accent,
     textTransform: 'capitalize',
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm },
   chip: {
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.full,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs + 2,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.full,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs + 2,
   },
-  chipActive: { backgroundColor: theme.colors.accent },
+  chipActive: { backgroundColor: t.colors.accent },
   chipText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.medium,
+    color: t.colors.accent,
   },
-  chipTextActive: { color: theme.colors.white },
-  previewCard: { padding: theme.spacing.lg, gap: theme.spacing.sm, marginTop: theme.spacing.sm },
+  chipTextActive: { color: t.colors.white },
+  previewCard: { padding: t.spacing.lg, gap: t.spacing.sm, marginTop: t.spacing.sm },
   previewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   previewTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
   previewTotal: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.accent,
   },
-  previewRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: theme.spacing.xs },
-  previewName: { fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
+  previewRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: t.spacing.xs },
+  previewName: { fontSize: t.typography.sizes.base, color: t.colors.textPrimary },
   previewAmount: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textPrimary,
   },
 });

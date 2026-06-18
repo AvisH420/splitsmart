@@ -31,10 +31,12 @@ import {
   createSettlement,
   listSettlements,
 } from '../../../../lib/repositories/settlements';
-import { theme } from '../../../../lib/theme';
+import { useTheme, type Theme } from '../../../../lib/theme';
 import type { GroupMemberWithProfile, SettlementSuggestion } from '../../../../lib/types';
 
 export default function SettleScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -148,7 +150,7 @@ export default function SettleScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenHeader title="Settle up" onBack={() => router.back()} />
       {loading ? (
-        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : loadError ? (
         <AnimatedScreen>
           <ScrollView contentContainerStyle={styles.content}>
@@ -173,7 +175,7 @@ export default function SettleScreen() {
                 <Text style={styles.sectionTitle}>Suggested payments</Text>
                 {suggestions.length === 0 ? (
                   <GlassCard style={styles.emptyCard}>
-                    <Feather name="check-circle" size={28} color={theme.colors.positive} />
+                    <Feather name="check-circle" size={28} color={t.colors.positive} />
                     <Text style={styles.emptyText}>Everyone is settled up.</Text>
                   </GlassCard>
                 ) : (
@@ -235,68 +237,69 @@ export default function SettleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   fill: { flex: 1 },
-  content: { padding: theme.spacing.xl, gap: theme.spacing.sm, paddingBottom: theme.spacing.xxxl },
+  content: { padding: t.spacing.xl, gap: t.spacing.sm, paddingBottom: t.spacing.xxxl },
   center: { flex: 1 },
   sectionTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textSecondary,
   },
-  formTitle: { marginTop: theme.spacing.xl },
-  emptyCard: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.sm },
-  emptyText: { color: theme.colors.textSecondary, fontSize: theme.typography.sizes.base },
-  listCard: { paddingHorizontal: theme.spacing.lg },
+  formTitle: { marginTop: t.spacing.xl },
+  emptyCard: { padding: t.spacing.xl, alignItems: 'center', gap: t.spacing.sm },
+  emptyText: { color: t.colors.textSecondary, fontSize: t.typography.sizes.base },
+  listCard: { paddingHorizontal: t.spacing.lg },
   suggestion: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: theme.spacing.md,
+    paddingVertical: t.spacing.md,
   },
   divider: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.hairline,
+    borderTopColor: t.colors.hairline,
   },
-  suggestionText: { fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
+  suggestionText: { fontSize: t.typography.sizes.base, color: t.colors.textPrimary },
   suggestionAmount: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.accent,
   },
   hint: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
+    fontSize: t.typography.sizes.sm,
+    color: t.colors.textSecondary,
+    marginTop: t.spacing.sm,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm },
   chip: {
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.full,
-    paddingHorizontal: theme.spacing.md + 2,
-    paddingVertical: theme.spacing.xs + 2,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.full,
+    paddingHorizontal: t.spacing.md + 2,
+    paddingVertical: t.spacing.xs + 2,
   },
-  chipActive: { backgroundColor: theme.colors.accent },
+  chipActive: { backgroundColor: t.colors.accent },
   chipText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.medium,
+    color: t.colors.accent,
   },
-  chipTextActive: { color: theme.colors.white },
-  amountInput: { marginTop: theme.spacing.sm },
-  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm, marginTop: theme.spacing.xs },
-  submit: { marginTop: theme.spacing.md },
-  errorCard: { padding: theme.spacing.xl, gap: theme.spacing.sm, alignItems: 'center' },
+  chipTextActive: { color: t.colors.white },
+  amountInput: { marginTop: t.spacing.sm },
+  error: { color: t.colors.negative, fontSize: t.typography.sizes.sm, marginTop: t.spacing.xs },
+  submit: { marginTop: t.spacing.md },
+  errorCard: { padding: t.spacing.xl, gap: t.spacing.sm, alignItems: 'center' },
   errorTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
   errorBody: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.sm,
+    color: t.colors.textSecondary,
     textAlign: 'center',
   },
-  errorButton: { marginTop: theme.spacing.sm, alignSelf: 'stretch' },
+  errorButton: { marginTop: t.spacing.sm, alignSelf: 'stretch' },
 });
 

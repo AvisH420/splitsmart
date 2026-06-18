@@ -29,7 +29,7 @@ import {
 } from '../../../../lib/repositories/expenses';
 import { listMembers } from '../../../../lib/repositories/members';
 import { computeSplit, validateSplit, type SplitInput } from '../../../../lib/splits';
-import { theme } from '../../../../lib/theme';
+import { useTheme, type Theme } from '../../../../lib/theme';
 import type {
   ExpenseCategory,
   GroupMemberWithProfile,
@@ -51,6 +51,8 @@ function parseValue(text: string | undefined): number {
 }
 
 export default function ExpenseFormScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const { id, expenseId, prefill } = useLocalSearchParams<{
     id: string;
     expenseId?: string;
@@ -228,7 +230,7 @@ export default function ExpenseFormScreen() {
         onBack={() => router.back()}
       />
       {loading ? (
-        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : (
         <AnimatedScreen>
           <KeyboardAvoidingView
@@ -321,7 +323,7 @@ export default function ExpenseFormScreen() {
                         >
                           <View style={[styles.checkbox, checked && styles.checkboxOn]}>
                             {checked ? (
-                              <Feather name="check" size={14} color={theme.colors.white} />
+                              <Feather name="check" size={14} color={t.colors.white} />
                             ) : null}
                           </View>
                           <Avatar
@@ -380,6 +382,7 @@ function Chip({
   active: boolean;
   onPress: () => void;
 }) {
+  const styles = makeStyles(useTheme());
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -387,81 +390,82 @@ function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   fill: { flex: 1 },
-  content: { padding: theme.spacing.xl, gap: theme.spacing.md, paddingBottom: theme.spacing.xxxl },
+  content: { padding: t.spacing.xl, gap: t.spacing.md, paddingBottom: t.spacing.xxxl },
   center: { flex: 1 },
   label: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.medium,
+    color: t.colors.textSecondary,
+    marginTop: t.spacing.xs,
   },
-  hint: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
-  categoryRow: { flexDirection: 'row', gap: theme.spacing.sm, paddingVertical: 2 },
+  hint: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm },
+  categoryRow: { flexDirection: 'row', gap: t.spacing.sm, paddingVertical: 2 },
   chip: {
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.full,
-    paddingHorizontal: theme.spacing.md + 2,
-    paddingVertical: theme.spacing.xs + 2,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.full,
+    paddingHorizontal: t.spacing.md + 2,
+    paddingVertical: t.spacing.xs + 2,
   },
-  chipActive: { backgroundColor: theme.colors.accent },
+  chipActive: { backgroundColor: t.colors.accent },
   chipText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.sm,
+    fontWeight: t.typography.weights.medium,
+    color: t.colors.accent,
   },
-  chipTextActive: { color: theme.colors.white },
+  chipTextActive: { color: t.colors.white },
   segment: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.md,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.md,
     padding: 3,
   },
   segmentItem: {
     flex: 1,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: t.spacing.sm,
     alignItems: 'center',
-    borderRadius: theme.radii.sm,
+    borderRadius: t.radii.sm,
   },
-  segmentActive: { backgroundColor: theme.colors.accent },
+  segmentActive: { backgroundColor: t.colors.accent },
   segmentText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.accent,
-    fontWeight: theme.typography.weights.semibold,
+    fontSize: t.typography.sizes.sm,
+    color: t.colors.accent,
+    fontWeight: t.typography.weights.semibold,
   },
-  segmentTextActive: { color: theme.colors.white },
-  memberList: { gap: theme.spacing.xs },
+  segmentTextActive: { color: t.colors.white },
+  memberList: { gap: t.spacing.xs },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: theme.spacing.xs,
-    gap: theme.spacing.md,
+    paddingVertical: t.spacing.xs,
+    gap: t.spacing.md,
   },
-  memberToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  memberToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: t.spacing.md },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: theme.radii.sm,
+    borderRadius: t.radii.sm,
     borderWidth: 1.5,
-    borderColor: theme.colors.textTertiary,
+    borderColor: t.colors.textTertiary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxOn: { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
+  checkboxOn: { backgroundColor: t.colors.accent, borderColor: t.colors.accent },
   memberName: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    color: t.colors.textPrimary,
   },
   valueInput: { width: 76, textAlign: 'right' },
   share: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.base,
+    color: t.colors.textSecondary,
     minWidth: 64,
     textAlign: 'right',
   },
-  warn: { color: theme.colors.warning, fontSize: theme.typography.sizes.sm, marginTop: theme.spacing.xs },
-  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm, marginTop: theme.spacing.xs },
-  submit: { marginTop: theme.spacing.md },
+  warn: { color: t.colors.warning, fontSize: t.typography.sizes.sm, marginTop: t.spacing.xs },
+  error: { color: t.colors.negative, fontSize: t.typography.sizes.sm, marginTop: t.spacing.xs },
+  submit: { marginTop: t.spacing.md },
 });

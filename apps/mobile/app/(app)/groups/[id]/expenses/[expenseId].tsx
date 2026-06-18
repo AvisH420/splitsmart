@@ -28,7 +28,7 @@ import {
   listParticipants,
 } from '../../../../../lib/repositories/expenses';
 import { listMembers } from '../../../../../lib/repositories/members';
-import { theme } from '../../../../../lib/theme';
+import { useTheme, type Theme } from '../../../../../lib/theme';
 import type {
   Expense,
   ExpenseParticipant,
@@ -43,6 +43,8 @@ const SPLIT_LABEL: Record<string, string> = {
 };
 
 export default function ExpenseDetailScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const { id, expenseId } = useLocalSearchParams<{ id: string; expenseId: string }>();
   const router = useRouter();
 
@@ -124,14 +126,14 @@ export default function ExpenseDetailScreen() {
               onPress={() => router.push(`/groups/${id}/expense?expenseId=${expenseId}`)}
               hitSlop={8}
             >
-              <Feather name="edit-2" size={18} color={theme.colors.accent} />
+              <Feather name="edit-2" size={18} color={t.colors.accent} />
             </Pressable>
           ) : undefined
         }
       />
 
       {loading ? (
-        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : error || !expense ? (
         <Text style={styles.error}>{error ?? 'Expense not found.'}</Text>
       ) : (
@@ -180,7 +182,7 @@ export default function ExpenseDetailScreen() {
               onPress={onDelete}
               disabled={deleting}
             >
-              <Feather name="trash-2" size={16} color={theme.colors.negative} />
+              <Feather name="trash-2" size={16} color={t.colors.negative} />
               <Text style={styles.deleteText}>
                 {deleting ? 'Deleting...' : 'Delete expense'}
               </Text>
@@ -192,77 +194,78 @@ export default function ExpenseDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   center: { flex: 1 },
   error: {
-    color: theme.colors.negative,
-    fontSize: theme.typography.sizes.sm,
-    padding: theme.spacing.xl,
+    color: t.colors.negative,
+    fontSize: t.typography.sizes.sm,
+    padding: t.spacing.xl,
   },
-  content: { padding: theme.spacing.xl, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxxl },
-  hero: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.xs },
+  content: { padding: t.spacing.xl, gap: t.spacing.lg, paddingBottom: t.spacing.xxxl },
+  hero: { padding: t.spacing.xl, alignItems: 'center', gap: t.spacing.xs },
   amount: {
-    fontSize: theme.typography.sizes.display,
-    fontWeight: theme.typography.weights.heavy,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.display,
+    fontWeight: t.typography.weights.heavy,
+    color: t.colors.accent,
   },
   title: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.lg,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textPrimary,
   },
-  meta: { fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary },
+  meta: { fontSize: t.typography.sizes.sm, color: t.colors.textSecondary },
   badge: {
-    backgroundColor: theme.colors.accentSubtle,
-    borderRadius: theme.radii.full,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    marginTop: theme.spacing.xs,
+    backgroundColor: t.colors.accentSubtle,
+    borderRadius: t.radii.full,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
+    marginTop: t.spacing.xs,
   },
   badgeText: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.accent,
+    fontSize: t.typography.sizes.xs,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.accent,
   },
-  date: { fontSize: theme.typography.sizes.xs, color: theme.colors.textTertiary, marginTop: theme.spacing.xs },
+  date: { fontSize: t.typography.sizes.xs, color: t.colors.textTertiary, marginTop: t.spacing.xs },
   sectionTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textSecondary,
   },
-  listCard: { paddingHorizontal: theme.spacing.lg },
+  listCard: { paddingHorizontal: t.spacing.lg },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    gap: t.spacing.md,
+    paddingVertical: t.spacing.md,
   },
   divider: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.hairline,
+    borderTopColor: t.colors.hairline,
   },
   rowName: {
     flex: 1,
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    color: t.colors.textPrimary,
   },
-  rowValue: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  rowValue: { fontSize: t.typography.sizes.sm, color: t.colors.textTertiary },
   rowShare: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.md,
+    gap: t.spacing.sm,
+    paddingVertical: t.spacing.md,
   },
   disabled: { opacity: 0.5 },
   deleteText: {
-    color: theme.colors.negative,
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
+    color: t.colors.negative,
+    fontSize: t.typography.sizes.base,
+    fontWeight: t.typography.weights.semibold,
   },
 });

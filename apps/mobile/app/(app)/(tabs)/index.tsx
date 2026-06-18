@@ -18,10 +18,12 @@ import { GradientBackground } from '../../../lib/components/GradientBackground';
 import { PressableScale } from '../../../lib/components/PressableScale';
 import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { listGroups } from '../../../lib/repositories/groups';
-import { theme } from '../../../lib/theme';
+import { useTheme, type Theme } from '../../../lib/theme';
 import type { Group } from '../../../lib/types';
 
 export default function GroupsScreen() {
+  const t = useTheme();
+  const styles = makeStyles(t);
   const router = useRouter();
   const { signOut } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -49,20 +51,20 @@ export default function GroupsScreen() {
         right={
           <>
             <Pressable onPress={() => router.push('/groups/new')} hitSlop={8}>
-              <Feather name="plus" size={22} color={theme.colors.accent} />
+              <Feather name="plus" size={22} color={t.colors.accent} />
             </Pressable>
             <Pressable onPress={() => router.push('/activity')} hitSlop={8}>
-              <Feather name="bell" size={20} color={theme.colors.accent} />
+              <Feather name="bell" size={20} color={t.colors.accent} />
             </Pressable>
             <Pressable onPress={signOut} hitSlop={8}>
-              <Feather name="log-out" size={20} color={theme.colors.textSecondary} />
+              <Feather name="log-out" size={20} color={t.colors.textSecondary} />
             </Pressable>
           </>
         }
       />
 
       {loading ? (
-        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+        <ActivityIndicator style={styles.center} size="large" color={t.colors.accent} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
@@ -75,7 +77,7 @@ export default function GroupsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Feather name="users" size={40} color={theme.colors.textTertiary} />
+              <Feather name="users" size={40} color={t.colors.textTertiary} />
               <Text style={styles.emptyTitle}>No groups yet</Text>
               <Text style={styles.emptyBody}>
                 Create a group to start splitting expenses with friends.
@@ -92,7 +94,7 @@ export default function GroupsScreen() {
               <PressableScale onPress={() => router.push(`/groups/${item.id}`)}>
                 <GlassCard style={styles.row}>
                   <Text style={styles.rowTitle}>{item.name}</Text>
-                  <Feather name="chevron-right" size={22} color={theme.colors.textTertiary} />
+                  <Feather name="chevron-right" size={22} color={t.colors.textTertiary} />
                 </GlassCard>
               </PressableScale>
             </AnimatedListItem>
@@ -104,41 +106,42 @@ export default function GroupsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
   center: { flex: 1 },
   error: {
-    color: theme.colors.negative,
-    fontSize: theme.typography.sizes.sm,
-    padding: theme.spacing.xl,
+    color: t.colors.negative,
+    fontSize: t.typography.sizes.sm,
+    padding: t.spacing.xl,
   },
   listContent: {
-    padding: theme.spacing.xl,
-    gap: theme.spacing.md,
-    paddingBottom: theme.spacing.xxxl * 2,
+    padding: t.spacing.xl,
+    gap: t.spacing.md,
+    paddingBottom: t.spacing.xxxl * 2,
   },
-  emptyContent: { flexGrow: 1, justifyContent: 'center', padding: theme.spacing.xl },
-  empty: { alignItems: 'center', gap: theme.spacing.md },
+  emptyContent: { flexGrow: 1, justifyContent: 'center', padding: t.spacing.xl },
+  empty: { alignItems: 'center', gap: t.spacing.md },
   emptyTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.lg,
+    fontWeight: t.typography.weights.bold,
+    color: t.colors.textPrimary,
   },
   emptyBody: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textSecondary,
+    fontSize: t.typography.sizes.base,
+    color: t.colors.textSecondary,
     textAlign: 'center',
   },
-  emptyButton: { marginTop: theme.spacing.sm },
+  emptyButton: { marginTop: t.spacing.sm },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: t.spacing.lg,
+    paddingHorizontal: t.spacing.lg,
   },
   rowTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textPrimary,
+    fontSize: t.typography.sizes.md,
+    fontWeight: t.typography.weights.semibold,
+    color: t.colors.textPrimary,
   },
 });
