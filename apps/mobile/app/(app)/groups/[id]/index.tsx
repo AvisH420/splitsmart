@@ -141,6 +141,9 @@ export default function GroupDetailScreen() {
               >
                 <Text style={styles.headerIcon}>✨</Text>
               </Pressable>
+              <Pressable onPress={() => router.push(`/groups/${id}/receipt`)} hitSlop={8}>
+                <Text style={styles.headerIcon}>🧾</Text>
+              </Pressable>
               <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
                 <Text style={styles.action}>Activity</Text>
               </Pressable>

@@ -42,6 +42,10 @@ export default function AppLayout() {
         name="groups/[id]/settle"
         options={{ title: 'Settle Up', presentation: 'modal' }}
       />
+      <Stack.Screen
+        name="groups/[id]/receipt"
+        options={{ title: 'Scan Receipt', presentation: 'modal' }}
+      />
     </Stack>
   );
 }

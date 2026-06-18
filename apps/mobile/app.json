@@ -12,7 +12,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "SplitSmart needs access to your photos so you can set a profile picture."
+          "photosPermission": "SplitSmart needs access to your photos so you can set a profile picture or scan a receipt.",
+          "cameraPermission": "SplitSmart needs camera access so you can scan a receipt."
         }
       ]
     ],
