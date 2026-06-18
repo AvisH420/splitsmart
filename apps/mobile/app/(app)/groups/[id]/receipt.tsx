@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -11,17 +12,23 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useAuth } from '../../../../lib/auth-context';
 import { equalSplit } from '../../../../lib/balances';
+import { AnimatedScreen } from '../../../../lib/components/AnimatedScreen';
+import { Button } from '../../../../lib/components/Button';
+import { GlassCard } from '../../../../lib/components/GlassCard';
+import { GradientBackground } from '../../../../lib/components/GradientBackground';
+import { Input } from '../../../../lib/components/Input';
+import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import { formatMoney } from '../../../../lib/format';
 import { parseReceipt } from '../../../../lib/repositories/ai';
 import { saveExpense } from '../../../../lib/repositories/expenses';
 import { saveReceiptItems, type ReceiptItemWrite } from '../../../../lib/repositories/items';
 import { listMembers } from '../../../../lib/repositories/members';
+import { theme } from '../../../../lib/theme';
 import type {
   GroupMemberWithProfile,
   ItemCategory,
@@ -53,7 +60,6 @@ export default function ReceiptScreen() {
   const [context, setContext] = useState('');
   const [parsing, setParsing] = useState(false);
   const [parsed, setParsed] = useState<ReceiptParseResult | null>(null);
-  // itemIndex -> set of assigned member ids
   const [assignments, setAssignments] = useState<Record<number, Set<string>>>({});
   const [paidBy, setPaidBy] = useState<string | undefined>(currentUserId);
   const [previewed, setPreviewed] = useState(false);
@@ -142,9 +148,8 @@ export default function ReceiptScreen() {
     setPreviewed(false);
   };
 
-  // Live per-person split, computed client-side in integer cents.
   const split = useMemo(() => {
-    const perUser = new Map<string, number>(); // cents
+    const perUser = new Map<string, number>();
     let totalCents = 0;
     parsed?.line_items.forEach((item, i) => {
       const assignees = [...(assignments[i] ?? [])];
@@ -184,7 +189,6 @@ export default function ReceiptScreen() {
         participants,
       });
 
-      // Persist the per-item breakdown (expense_items / item_shares).
       const items: ReceiptItemWrite[] = [];
       parsed.line_items.forEach((item, i) => {
         const assignees = [...(assignments[i] ?? [])];
@@ -207,231 +211,263 @@ export default function ReceiptScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Stack.Screen options={{ title: 'Scan Receipt' }} />
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {!parsed && !parsing ? (
-          <>
-            <Text style={styles.label}>
-              Add a note (optional) — e.g. “I don’t drink”, “Priya had only the salad”
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Context for the split"
-              value={context}
-              onChangeText={setContext}
-            />
-            <Pressable style={styles.button} onPress={() => pickImage(true)}>
-              <Text style={styles.buttonText}>Take photo</Text>
-            </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={() => pickImage(false)}>
-              <Text style={styles.secondaryText}>Choose from library</Text>
-            </Pressable>
-          </>
-        ) : null}
-
-        {parsing ? (
-          <View style={styles.loading}>
-            <ActivityIndicator size="large" />
-            <Text style={styles.loadingText}>Reading your receipt…</Text>
-          </View>
-        ) : null}
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        {parsed && !parsing ? (
-          <>
-            <View style={styles.headerCard}>
-              <Text style={styles.restaurant}>
-                {parsed.restaurant_name || 'Receipt'}
-              </Text>
-              <Text style={styles.totalNote}>
-                Receipt total {formatMoney(parsed.total_amount, parsed.currency)} ·{' '}
-                {parsed.confidence} confidence
-              </Text>
-            </View>
-
-            <Text style={styles.label}>Assign each item</Text>
-            {parsed.line_items.map((item, i) => (
-              <View key={i} style={styles.itemCard}>
-                <View style={styles.itemHead}>
-                  <Text style={styles.itemDesc}>{item.description}</Text>
-                  <Text style={styles.itemAmount}>{formatMoney(item.amount)}</Text>
-                </View>
-                <View style={styles.itemBadge}>
-                  <Text style={styles.itemBadgeText}>{item.category}</Text>
-                </View>
-                <View style={styles.assignChips}>
-                  {members.map((m) => {
-                    const on = assignments[i]?.has(m.user_id);
-                    return (
-                      <Pressable
-                        key={m.user_id}
-                        style={[styles.chip, on && styles.chipActive]}
-                        onPress={() => toggleAssign(i, m.user_id)}
-                      >
-                        <Text style={[styles.chipText, on && styles.chipTextActive]}>
-                          {m.profile.display_name}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
-
-            <Text style={styles.label}>Paid by</Text>
-            <View style={styles.assignChips}>
-              {members.map((m) => (
-                <Pressable
-                  key={m.user_id}
-                  style={[styles.chip, paidBy === m.user_id && styles.chipActive]}
-                  onPress={() => setPaidBy(m.user_id)}
-                >
-                  <Text
-                    style={[styles.chipText, paidBy === m.user_id && styles.chipTextActive]}
-                  >
-                    {m.profile.display_name}
+    <GradientBackground>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader title="Scan receipt" onBack={() => router.back()} />
+      <KeyboardAvoidingView
+        style={styles.fill}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {!parsed && !parsing ? (
+              <AnimatedScreen>
+                <View style={styles.intro}>
+                  <View style={styles.iconCircle}>
+                    <Feather name="camera" size={28} color={theme.colors.accent} />
+                  </View>
+                  <Text style={styles.introTitle}>Scan a receipt</Text>
+                  <Text style={styles.introBody}>
+                    Snap a bill and the assistant will pull out the line items and
+                    suggest who had what.
                   </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {unassignedCount > 0 ? (
-              <Text style={styles.warn}>
-                {unassignedCount} item(s) are unassigned and will be left out.
-              </Text>
+                </View>
+                <Input
+                  label="Note (optional)"
+                  placeholder="e.g. I don't drink, Priya had only the salad"
+                  value={context}
+                  onChangeText={setContext}
+                />
+                <Button
+                  title="Take photo"
+                  onPress={() => pickImage(true)}
+                  style={styles.gap}
+                />
+                <Button
+                  title="Choose from library"
+                  variant="secondary"
+                  onPress={() => pickImage(false)}
+                />
+              </AnimatedScreen>
             ) : null}
 
-            {!previewed ? (
-              <Pressable
-                style={[styles.button, split.totalCents <= 0 && styles.buttonDisabled]}
-                onPress={() => setPreviewed(true)}
-                disabled={split.totalCents <= 0}
-              >
-                <Text style={styles.buttonText}>Preview split</Text>
-              </Pressable>
-            ) : (
-              <View style={styles.previewCard}>
-                <View style={styles.previewHead}>
-                  <Text style={styles.previewTitle}>Split preview</Text>
-                  <Text style={styles.previewTotal}>
-                    {formatMoney(split.totalCents / 100)}
-                  </Text>
-                </View>
-                {[...split.perUser.entries()].map(([uid, cents]) => (
-                  <View key={uid} style={styles.previewRow}>
-                    <Text style={styles.previewName}>{nameFor(uid)}</Text>
-                    <Text style={styles.previewAmount}>{formatMoney(cents / 100)}</Text>
-                  </View>
-                ))}
-                <Pressable
-                  style={[
-                    styles.button,
-                    (saving || !paidBy) && styles.buttonDisabled,
-                  ]}
-                  onPress={onSave}
-                  disabled={saving || !paidBy}
-                >
-                  <Text style={styles.buttonText}>
-                    {saving ? 'Saving…' : 'Save expense'}
-                  </Text>
-                </Pressable>
+            {parsing ? (
+              <View style={styles.loading}>
+                <ActivityIndicator size="large" color={theme.colors.accent} />
+                <Text style={styles.loadingText}>Reading your receipt…</Text>
               </View>
-            )}
-          </>
-        ) : null}
-      </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+            ) : null}
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            {parsed && !parsing ? (
+              <AnimatedScreen>
+                <GlassCard style={styles.headerCard}>
+                  <Text style={styles.restaurant}>{parsed.restaurant_name || 'Receipt'}</Text>
+                  <Text style={styles.totalNote}>
+                    {formatMoney(parsed.total_amount, parsed.currency)} · {parsed.confidence} confidence
+                  </Text>
+                </GlassCard>
+
+                <Text style={styles.sectionTitle}>Assign each item</Text>
+                <View style={styles.itemList}>
+                  {parsed.line_items.map((item, i) => (
+                    <GlassCard key={i} style={styles.itemCard}>
+                      <View style={styles.itemHead}>
+                        <Text style={styles.itemDesc}>{item.description}</Text>
+                        <Text style={styles.itemAmount}>{formatMoney(item.amount)}</Text>
+                      </View>
+                      <View style={styles.itemBadge}>
+                        <Text style={styles.itemBadgeText}>{item.category}</Text>
+                      </View>
+                      <View style={styles.chips}>
+                        {members.map((m) => {
+                          const on = assignments[i]?.has(m.user_id);
+                          return (
+                            <Chip
+                              key={m.user_id}
+                              label={m.profile.display_name}
+                              active={!!on}
+                              onPress={() => toggleAssign(i, m.user_id)}
+                            />
+                          );
+                        })}
+                      </View>
+                    </GlassCard>
+                  ))}
+                </View>
+
+                <Text style={styles.sectionTitle}>Paid by</Text>
+                <View style={styles.chips}>
+                  {members.map((m) => (
+                    <Chip
+                      key={m.user_id}
+                      label={m.profile.display_name}
+                      active={paidBy === m.user_id}
+                      onPress={() => setPaidBy(m.user_id)}
+                    />
+                  ))}
+                </View>
+
+                {unassignedCount > 0 ? (
+                  <Text style={styles.warn}>
+                    {unassignedCount} item(s) are unassigned and will be left out.
+                  </Text>
+                ) : null}
+
+                {!previewed ? (
+                  <Button
+                    title="Preview split"
+                    onPress={() => setPreviewed(true)}
+                    disabled={split.totalCents <= 0}
+                    style={styles.gap}
+                  />
+                ) : (
+                  <GlassCard style={styles.previewCard}>
+                    <View style={styles.previewHead}>
+                      <Text style={styles.previewTitle}>Split preview</Text>
+                      <Text style={styles.previewTotal}>
+                        {formatMoney(split.totalCents / 100)}
+                      </Text>
+                    </View>
+                    {[...split.perUser.entries()].map(([uid, cents]) => (
+                      <View key={uid} style={styles.previewRow}>
+                        <Text style={styles.previewName}>{nameFor(uid)}</Text>
+                        <Text style={styles.previewAmount}>{formatMoney(cents / 100)}</Text>
+                      </View>
+                    ))}
+                    <Button
+                      title="Save expense"
+                      onPress={onSave}
+                      loading={saving}
+                      disabled={!paidBy}
+                      style={styles.gap}
+                    />
+                  </GlassCard>
+                )}
+              </AnimatedScreen>
+            ) : null}
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </GradientBackground>
+  );
+}
+
+function Chip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, gap: 10 },
-  label: { fontSize: 14, color: '#666', marginTop: 6 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#1d9e75',
-    borderRadius: 8,
-    paddingVertical: 14,
+  fill: { flex: 1 },
+  content: { padding: theme.spacing.xl, gap: theme.spacing.md, paddingBottom: theme.spacing.xxxl },
+  intro: { alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.md },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.accentSubtle,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    marginBottom: theme.spacing.xs,
   },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  secondaryButton: { paddingVertical: 12, alignItems: 'center' },
-  secondaryText: { color: '#1d9e75', fontSize: 15, fontWeight: '600' },
-  error: { color: '#c0392b', fontSize: 14 },
-  warn: { color: '#b9770e', fontSize: 14 },
-  loading: { alignItems: 'center', gap: 12, paddingVertical: 48 },
-  loadingText: { color: '#666', fontSize: 15 },
-  headerCard: {
-    backgroundColor: '#f3faf7',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#cce8dd',
-    borderRadius: 12,
-    padding: 16,
+  introTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
   },
-  restaurant: { fontSize: 18, fontWeight: '700' },
-  totalNote: { fontSize: 13, color: '#777', marginTop: 2 },
-  itemCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
-    borderRadius: 10,
-    padding: 12,
-    gap: 8,
+  introBody: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
+  gap: { marginTop: theme.spacing.sm },
+  loading: { alignItems: 'center', gap: theme.spacing.md, paddingVertical: theme.spacing.xxxl },
+  loadingText: { color: theme.colors.textSecondary, fontSize: theme.typography.sizes.base },
+  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
+  warn: { color: theme.colors.warning, fontSize: theme.typography.sizes.sm },
+  headerCard: { padding: theme.spacing.lg },
+  restaurant: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+  },
+  totalNote: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary, marginTop: 2 },
+  sectionTitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+  },
+  itemList: { gap: theme.spacing.sm },
+  itemCard: { padding: theme.spacing.lg, gap: theme.spacing.sm },
   itemHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  itemDesc: { fontSize: 16, fontWeight: '500', flex: 1 },
-  itemAmount: { fontSize: 16, fontWeight: '600' },
+  itemDesc: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.textPrimary,
+    flex: 1,
+  },
+  itemAmount: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+  },
   itemBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    paddingHorizontal: 8,
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.full,
+    paddingHorizontal: theme.spacing.sm,
     paddingVertical: 2,
   },
-  itemBadgeText: { fontSize: 12, color: '#666' },
-  assignChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  itemBadgeText: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.accent,
+    textTransform: 'capitalize',
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   chip: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.full,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs + 2,
   },
-  chipActive: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
-  chipText: { fontSize: 13, color: '#333' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
-  previewCard: {
-    backgroundColor: '#f3faf7',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#cce8dd',
-    borderRadius: 12,
-    padding: 16,
-    gap: 6,
+  chipActive: { backgroundColor: theme.colors.accent },
+  chipText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.accent,
   },
-  previewHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  chipTextActive: { color: theme.colors.white },
+  previewCard: { padding: theme.spacing.lg, gap: theme.spacing.sm, marginTop: theme.spacing.sm },
+  previewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  previewTitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
   },
-  previewTitle: { fontSize: 16, fontWeight: '700' },
-  previewTotal: { fontSize: 16, fontWeight: '700', color: '#1d9e75' },
-  previewRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  previewName: { fontSize: 15 },
-  previewAmount: { fontSize: 15, fontWeight: '600' },
+  previewTotal: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.accent,
+  },
+  previewRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: theme.spacing.xs },
+  previewName: { fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
+  previewAmount: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
+  },
 });

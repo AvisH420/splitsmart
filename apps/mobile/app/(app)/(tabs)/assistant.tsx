@@ -1,7 +1,7 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -9,13 +9,16 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { AnimatedScreen } from '../../../lib/components/AnimatedScreen';
 import { Avatar } from '../../../lib/components/Avatar';
+import { Button } from '../../../lib/components/Button';
 import { GlassCard } from '../../../lib/components/GlassCard';
 import { GradientBackground } from '../../../lib/components/GradientBackground';
+import { Input } from '../../../lib/components/Input';
+import { PressableScale } from '../../../lib/components/PressableScale';
 import { ScreenHeader } from '../../../lib/components/ScreenHeader';
 import { categoryLabel } from '../../../lib/categories';
 import { formatMoney } from '../../../lib/format';
@@ -43,7 +46,6 @@ export default function AssistantScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [prompt, setPrompt] = useState('');
 
-  // Search tab state.
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<ExpenseSearchResult | null>(null);
@@ -67,7 +69,6 @@ export default function AssistantScreen() {
       .catch((e) => setMemoryError((e as Error).message));
 
   useEffect(() => {
-    // When opened as a tab with no group selected, load the group picker list.
     if (!group_id) {
       listGroups()
         .then(setGroups)
@@ -86,7 +87,6 @@ export default function AssistantScreen() {
   const avatarFor = (userId: string) =>
     members.find((m) => m.user_id === userId)?.profile.avatar_url ?? null;
 
-  // Resolved per-person shares for the preview, recomputed from the parsed split.
   const previewShares = useMemo(() => {
     if (!parsed) return null;
     const inputs: SplitInput[] = parsed.participants.map((p) => ({
@@ -97,9 +97,10 @@ export default function AssistantScreen() {
     if (err) return { error: err, shares: [] as { userId: string; amount: number }[] };
     return {
       error: null,
-      shares: computeSplit(parsed.split_type, parsed.total_amount, inputs).map(
-        (s) => ({ userId: s.userId, amount: s.shareAmount })
-      ),
+      shares: computeSplit(parsed.split_type, parsed.total_amount, inputs).map((s) => ({
+        userId: s.userId,
+        amount: s.shareAmount,
+      })),
     };
   }, [parsed]);
 
@@ -108,7 +109,6 @@ export default function AssistantScreen() {
       ? `${prompt.trim()}\n\nAdditional context: ${context.trim()}`
       : prompt.trim();
     if (!fullPrompt) return;
-
     setParsing(true);
     setError(null);
     setClarification(null);
@@ -119,11 +119,8 @@ export default function AssistantScreen() {
         fullPrompt,
         members.map((m) => ({ id: m.user_id, name: m.profile.display_name }))
       );
-      if (result.status === 'clarification') {
-        setClarification(result.message);
-      } else {
-        setParsed(result.expense);
-      }
+      if (result.status === 'clarification') setClarification(result.message);
+      else setParsed(result.expense);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -208,413 +205,426 @@ export default function AssistantScreen() {
     }
   };
 
-  // Opened as a tab with no group context: let the user pick a group first.
+  // No group selected: pick one first.
   if (!group_id) {
     return (
       <GradientBackground>
         <ScreenHeader title="Assistant" />
-        <ScrollView contentContainerStyle={styles.pickerContent}>
-          <Text style={styles.pickerLabel}>Choose a group to use the assistant</Text>
-          {groups.map((g) => (
-            <Pressable key={g.id} onPress={() => router.setParams({ group_id: g.id })}>
-              <GlassCard style={styles.pickerRow}>
-                <Text style={styles.pickerName}>{g.name}</Text>
-              </GlassCard>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <AnimatedScreen>
+          <ScrollView contentContainerStyle={styles.content}>
+            <Text style={styles.pickerLabel}>Choose a group to use the assistant</Text>
+            {groups.map((g) => (
+              <PressableScale
+                key={g.id}
+                onPress={() => router.setParams({ group_id: g.id })}
+              >
+                <GlassCard style={styles.pickerRow}>
+                  <Text style={styles.pickerName}>{g.name}</Text>
+                  <Feather name="chevron-right" size={20} color={theme.colors.textTertiary} />
+                </GlassCard>
+              </PressableScale>
+            ))}
+          </ScrollView>
+        </AnimatedScreen>
       </GradientBackground>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Stack.Screen options={{ title: 'AI Assistant' }} />
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.tabs}>
-          <Pressable
-            style={[styles.tab, mode === 'assistant' && styles.tabActive]}
-            onPress={() => setMode('assistant')}
-          >
-            <Text style={[styles.tabText, mode === 'assistant' && styles.tabTextActive]}>
-              Assistant
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.tab, mode === 'search' && styles.tabActive]}
-            onPress={() => setMode('search')}
-          >
-            <Text style={[styles.tabText, mode === 'search' && styles.tabTextActive]}>
-              Search
-            </Text>
-          </Pressable>
-        </View>
-
-        {mode === 'assistant' ? (
-          <>
-        <Text style={styles.label}>Describe the expense</Text>
-        <TextInput
-          style={[styles.input, styles.multiline]}
-          placeholder="e.g. Rahul paid 840 for dinner, split equally between me, Priya and him"
-          value={prompt}
-          onChangeText={setPrompt}
-          multiline
-        />
-
-        <Pressable
-          style={[styles.button, (parsing || !prompt.trim()) && styles.buttonDisabled]}
-          onPress={onParse}
-          disabled={parsing || !prompt.trim()}
+    <GradientBackground>
+      <ScreenHeader title="Assistant" />
+      <AnimatedScreen>
+        <KeyboardAvoidingView
+          style={styles.fill}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <Text style={styles.buttonText}>{parsing ? 'Parsing…' : 'Parse'}</Text>
-        </Pressable>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        {clarification ? (
-          <View style={styles.clarifyCard}>
-            <Text style={styles.clarifyTitle}>I need a bit more info</Text>
-            <Text style={styles.clarifyText}>{clarification}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Add details and parse again"
-              value={context}
-              onChangeText={setContext}
-            />
-            <Pressable
-              style={[styles.button, parsing && styles.buttonDisabled]}
-              onPress={onParse}
-              disabled={parsing}
-            >
-              <Text style={styles.buttonText}>Try again</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {parsed ? (
-          <View style={styles.previewCard}>
-            <View style={styles.previewHeader}>
-              <Text style={styles.previewTitle}>{parsed.title}</Text>
-              <Text style={styles.previewAmount}>
-                {formatMoney(parsed.total_amount, parsed.currency)}
-              </Text>
-            </View>
-            <Text style={styles.previewMeta}>
-              {nameFor(parsed.paid_by)} paid · split {parsed.split_type}
-              {parsed.category ? ` · ${categoryLabel(parsed.category)}` : ''}
-              {`  ·  ${parsed.confidence} confidence`}
-            </Text>
-
-            {previewShares?.error ? (
-              <Text style={styles.warn}>{previewShares.error}</Text>
-            ) : (
-              previewShares?.shares.map((s) => (
-                <View key={s.userId} style={styles.shareRow}>
-                  <Avatar name={nameFor(s.userId)} uri={avatarFor(s.userId)} size={28} />
-                  <Text style={styles.shareName}>{nameFor(s.userId)}</Text>
-                  <Text style={styles.shareAmount}>{formatMoney(s.amount)}</Text>
-                </View>
-              ))
-            )}
-
-            <Pressable
-              style={[
-                styles.button,
-                (saving || !!previewShares?.error) && styles.buttonDisabled,
-              ]}
-              onPress={onSave}
-              disabled={saving || !!previewShares?.error}
-            >
-              <Text style={styles.buttonText}>
-                {saving ? 'Saving…' : 'Save this expense'}
-              </Text>
-            </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={onEditManually}>
-              <Text style={styles.secondaryText}>Edit manually</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {/* Group memory */}
-        <View style={styles.memorySection}>
-          <Text style={styles.sectionTitle}>Group memory</Text>
-          <Text style={styles.sectionHint}>
-            Things the assistant remembers about this group — used to improve
-            parsing and receipt splits.
-          </Text>
-
-          {memories.length === 0 ? (
-            <Text style={styles.memoryEmpty}>No memories yet.</Text>
-          ) : (
-            memories.map((m) => (
-              <View key={m.id} style={styles.memoryRow}>
-                <Text style={styles.memoryContent}>
-                  {m.subject_user_id ? `${nameFor(m.subject_user_id)}: ` : ''}
-                  {m.content}
-                </Text>
-                <Pressable onPress={() => onDeleteMemory(m.id)} hitSlop={8}>
-                  <Text style={styles.memoryDelete}>Delete</Text>
-                </Pressable>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+              <View style={styles.segment}>
+                {(['assistant', 'search'] as const).map((m) => (
+                  <Pressable
+                    key={m}
+                    style={[styles.segmentItem, mode === m && styles.segmentActive]}
+                    onPress={() => setMode(m)}
+                  >
+                    <Text style={[styles.segmentText, mode === m && styles.segmentTextActive]}>
+                      {m === 'assistant' ? 'Assistant' : 'Search'}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
-            ))
-          )}
 
-          <Text style={styles.memoryAbout}>About</Text>
-          <View style={styles.subjectChips}>
-            <Pressable
-              style={[styles.chip, memorySubject === null && styles.chipActive]}
-              onPress={() => setMemorySubject(null)}
-            >
-              <Text style={[styles.chipText, memorySubject === null && styles.chipTextActive]}>
-                Group
-              </Text>
-            </Pressable>
-            {members.map((m) => (
-              <Pressable
-                key={m.user_id}
-                style={[styles.chip, memorySubject === m.user_id && styles.chipActive]}
-                onPress={() => setMemorySubject(m.user_id)}
-              >
-                <Text
-                  style={[
-                    styles.chipText,
-                    memorySubject === m.user_id && styles.chipTextActive,
-                  ]}
-                >
-                  {m.profile.display_name}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+              {mode === 'assistant' ? (
+                <>
+                  <Input
+                    label="Describe an expense"
+                    placeholder="e.g. Rahul paid 840 for dinner, split equally between me, Priya and him"
+                    value={prompt}
+                    onChangeText={setPrompt}
+                    multiline
+                    style={styles.multiline}
+                  />
+                  <Button
+                    title="Parse"
+                    onPress={onParse}
+                    loading={parsing}
+                    disabled={!prompt.trim()}
+                  />
 
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Priya is vegetarian"
-            value={memoryText}
-            onChangeText={setMemoryText}
-          />
-          {memoryError ? <Text style={styles.error}>{memoryError}</Text> : null}
-          <Pressable
-            style={[
-              styles.secondaryButton,
-              (addingMemory || !memoryText.trim()) && styles.buttonDisabled,
-            ]}
-            onPress={onAddMemory}
-            disabled={addingMemory || !memoryText.trim()}
-          >
-            <Text style={styles.secondaryText}>
-              {addingMemory ? 'Adding…' : '+ Add memory'}
-            </Text>
-          </Pressable>
-        </View>
-          </>
-        ) : (
-          <View style={styles.searchBlock}>
-            <Text style={styles.label}>Ask about your expenses</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. how much did we spend on food last month"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            <Pressable
-              style={[
-                styles.button,
-                (searching || !searchQuery.trim()) && styles.buttonDisabled,
-              ]}
-              onPress={onSearch}
-              disabled={searching || !searchQuery.trim()}
-            >
-              <Text style={styles.buttonText}>{searching ? 'Searching…' : 'Search'}</Text>
-            </Pressable>
+                  {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            {searchError ? <Text style={styles.error}>{searchError}</Text> : null}
+                  {clarification ? (
+                    <GlassCard style={styles.clarifyCard}>
+                      <View style={styles.bubbleHead}>
+                        <Feather name="help-circle" size={16} color={theme.colors.warning} />
+                        <Text style={styles.clarifyTitle}>A bit more info</Text>
+                      </View>
+                      <Text style={styles.clarifyText}>{clarification}</Text>
+                      <Input
+                        placeholder="Add details and try again"
+                        value={context}
+                        onChangeText={setContext}
+                      />
+                      <Button title="Try again" onPress={onParse} loading={parsing} />
+                    </GlassCard>
+                  ) : null}
 
-            {searchResult ? (
-              <>
-                {searchResult.summary ? (
-                  <Text style={styles.summary}>{searchResult.summary}</Text>
-                ) : null}
-
-                {Object.keys(searchResult.filters_applied).length > 0 ? (
-                  <View style={styles.subjectChips}>
-                    {Object.entries(searchResult.filters_applied).map(([k, v]) => (
-                      <View key={k} style={styles.filterChip}>
-                        <Text style={styles.filterChipText}>
-                          {k.replace(/_/g, ' ')}: {String(v)}
+                  {parsed ? (
+                    <GlassCard style={styles.bubble}>
+                      <View style={styles.bubbleHead}>
+                        <Feather name="zap" size={16} color={theme.colors.accent} />
+                        <Text style={styles.bubbleHeadText}>Here’s what I understood</Text>
+                      </View>
+                      <View style={styles.bubbleTop}>
+                        <Text style={styles.bubbleTitle}>{parsed.title}</Text>
+                        <Text style={styles.bubbleAmount}>
+                          {formatMoney(parsed.total_amount, parsed.currency)}
                         </Text>
                       </View>
+                      <Text style={styles.bubbleMeta}>
+                        {nameFor(parsed.paid_by)} paid · split {parsed.split_type}
+                        {parsed.category ? ` · ${categoryLabel(parsed.category)}` : ''} ·{' '}
+                        {parsed.confidence} confidence
+                      </Text>
+
+                      {previewShares?.error ? (
+                        <Text style={styles.warn}>{previewShares.error}</Text>
+                      ) : (
+                        <View style={styles.shares}>
+                          {previewShares?.shares.map((s) => (
+                            <View key={s.userId} style={styles.shareRow}>
+                              <Avatar name={nameFor(s.userId)} uri={avatarFor(s.userId)} size={28} />
+                              <Text style={styles.shareName}>{nameFor(s.userId)}</Text>
+                              <Text style={styles.shareAmount}>{formatMoney(s.amount)}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      <Button
+                        title="Save this expense"
+                        onPress={onSave}
+                        loading={saving}
+                        disabled={!!previewShares?.error}
+                        style={styles.gap}
+                      />
+                      <Button title="Edit manually" variant="ghost" onPress={onEditManually} />
+                    </GlassCard>
+                  ) : null}
+
+                  {/* Group memory */}
+                  <View style={styles.memoryHead}>
+                    <Text style={styles.sectionTitle}>Group memory</Text>
+                  </View>
+                  <Text style={styles.sectionHint}>
+                    Things the assistant remembers about this group — used to improve
+                    parsing and receipt splits.
+                  </Text>
+
+                  {memories.length > 0 ? (
+                    <GlassCard style={styles.listCard}>
+                      {memories.map((m, i) => (
+                        <View key={m.id} style={[styles.memoryRow, i > 0 && styles.divider]}>
+                          <Text style={styles.memoryContent}>
+                            {m.subject_user_id ? `${nameFor(m.subject_user_id)}: ` : ''}
+                            {m.content}
+                          </Text>
+                          <Pressable onPress={() => onDeleteMemory(m.id)} hitSlop={8}>
+                            <Feather name="x" size={16} color={theme.colors.textTertiary} />
+                          </Pressable>
+                        </View>
+                      ))}
+                    </GlassCard>
+                  ) : (
+                    <Text style={styles.memoryEmpty}>No memories yet.</Text>
+                  )}
+
+                  <Text style={styles.aboutLabel}>About</Text>
+                  <View style={styles.chips}>
+                    <Chip
+                      label="Group"
+                      active={memorySubject === null}
+                      onPress={() => setMemorySubject(null)}
+                    />
+                    {members.map((m) => (
+                      <Chip
+                        key={m.user_id}
+                        label={m.profile.display_name}
+                        active={memorySubject === m.user_id}
+                        onPress={() => setMemorySubject(m.user_id)}
+                      />
                     ))}
                   </View>
-                ) : null}
+                  <Input
+                    placeholder="e.g. Priya is vegetarian"
+                    value={memoryText}
+                    onChangeText={setMemoryText}
+                  />
+                  {memoryError ? <Text style={styles.error}>{memoryError}</Text> : null}
+                  <Button
+                    title="Add memory"
+                    variant="secondary"
+                    onPress={onAddMemory}
+                    loading={addingMemory}
+                    disabled={!memoryText.trim()}
+                  />
+                </>
+              ) : (
+                <>
+                  <Input
+                    label="Ask about your expenses"
+                    placeholder="e.g. how much did we spend on food last month"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                  <Button
+                    title="Search"
+                    onPress={onSearch}
+                    loading={searching}
+                    disabled={!searchQuery.trim()}
+                  />
 
-                {searchResult.expenses.length === 0 ? (
-                  <Text style={styles.memoryEmpty}>No matching expenses.</Text>
-                ) : (
-                  searchResult.expenses.map((e) => (
-                    <Pressable
-                      key={e.id}
-                      style={styles.resultRow}
-                      onPress={() =>
-                        router.push(`/groups/${group_id}/expenses/${e.id}`)
-                      }
-                    >
-                      <View style={styles.resultMain}>
-                        <Text style={styles.resultTitle}>{e.title}</Text>
-                        <Text style={styles.resultMeta}>{nameFor(e.paid_by)} paid</Text>
-                      </View>
-                      <Text style={styles.resultAmount}>
-                        {formatMoney(e.total_amount, e.currency)}
-                      </Text>
-                    </Pressable>
-                  ))
-                )}
-              </>
-            ) : null}
-          </View>
-        )}
-      </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+                  {searchError ? <Text style={styles.error}>{searchError}</Text> : null}
+
+                  {searchResult ? (
+                    <>
+                      {searchResult.summary ? (
+                        <GlassCard style={styles.summaryCard}>
+                          <Feather name="zap" size={16} color={theme.colors.accent} />
+                          <Text style={styles.summary}>{searchResult.summary}</Text>
+                        </GlassCard>
+                      ) : null}
+
+                      {Object.keys(searchResult.filters_applied).length > 0 ? (
+                        <View style={styles.chips}>
+                          {Object.entries(searchResult.filters_applied).map(([k, v]) => (
+                            <View key={k} style={styles.filterChip}>
+                              <Text style={styles.filterChipText}>
+                                {k.replace(/_/g, ' ')}: {String(v)}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
+
+                      {searchResult.expenses.length === 0 ? (
+                        <Text style={styles.memoryEmpty}>No matching expenses.</Text>
+                      ) : (
+                        <View style={styles.resultList}>
+                          {searchResult.expenses.map((e) => (
+                            <PressableScale
+                              key={e.id}
+                              onPress={() => router.push(`/groups/${group_id}/expenses/${e.id}`)}
+                            >
+                              <GlassCard style={styles.resultRow}>
+                                <View style={styles.resultMain}>
+                                  <Text style={styles.resultTitle}>{e.title}</Text>
+                                  <Text style={styles.resultMeta}>{nameFor(e.paid_by)} paid</Text>
+                                </View>
+                                <Text style={styles.resultAmount}>
+                                  {formatMoney(e.total_amount, e.currency)}
+                                </Text>
+                              </GlassCard>
+                            </PressableScale>
+                          ))}
+                        </View>
+                      )}
+                    </>
+                  ) : null}
+                </>
+              )}
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </AnimatedScreen>
+    </GradientBackground>
+  );
+}
+
+function Chip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, gap: 10 },
-  pickerContent: {
+  fill: { flex: 1 },
+  content: {
     padding: theme.spacing.xl,
     gap: theme.spacing.md,
     paddingBottom: theme.spacing.xxxl * 2,
   },
-  pickerLabel: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textSecondary,
+  pickerLabel: { fontSize: theme.typography.sizes.base, color: theme.colors.textSecondary },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.lg,
   },
-  pickerRow: { padding: theme.spacing.lg },
   pickerName: {
     fontSize: theme.typography.sizes.md,
     fontWeight: theme.typography.weights.semibold,
     color: theme.colors.textPrimary,
   },
-  label: { fontSize: 14, color: '#666' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  multiline: { minHeight: 80, textAlignVertical: 'top' },
-  button: {
-    backgroundColor: '#1d9e75',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  secondaryButton: { paddingVertical: 12, alignItems: 'center' },
-  secondaryText: { color: '#1d9e75', fontSize: 15, fontWeight: '600' },
-  error: { color: '#c0392b', fontSize: 14 },
-  warn: { color: '#b9770e', fontSize: 14, marginTop: 4 },
-  clarifyCard: {
-    backgroundColor: '#fffaf0',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#f0d9a8',
-    borderRadius: 12,
-    padding: 16,
-    gap: 10,
-  },
-  clarifyTitle: { fontSize: 15, fontWeight: '700', color: '#b9770e' },
-  clarifyText: { fontSize: 14, color: '#7a5b1e' },
-  previewCard: {
-    backgroundColor: '#f3faf7',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#cce8dd',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
-  previewHeader: {
+  segment: {
     flexDirection: 'row',
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.md,
+    padding: 3,
+  },
+  segmentItem: {
+    flex: 1,
+    paddingVertical: theme.spacing.sm,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    borderRadius: theme.radii.sm,
   },
-  previewTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
-  previewAmount: { fontSize: 18, fontWeight: '700', color: '#1d9e75' },
-  previewMeta: { fontSize: 13, color: '#777' },
-  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-  shareName: { flex: 1, fontSize: 15 },
-  shareAmount: { fontSize: 15, fontWeight: '600' },
-  memorySection: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#eee',
-    gap: 8,
+  segmentActive: { backgroundColor: theme.colors.accent },
+  segmentText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.accent,
+    fontWeight: theme.typography.weights.semibold,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
-  sectionHint: { fontSize: 13, color: '#999' },
-  memoryEmpty: { color: '#999', fontSize: 14, paddingVertical: 4 },
+  segmentTextActive: { color: theme.colors.white },
+  multiline: { minHeight: 84, textAlignVertical: 'top' },
+  gap: { marginTop: theme.spacing.xs },
+  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
+  warn: { color: theme.colors.warning, fontSize: theme.typography.sizes.sm },
+  clarifyCard: { padding: theme.spacing.lg, gap: theme.spacing.sm },
+  bubbleHead: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  clarifyTitle: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.warning,
+  },
+  clarifyText: { fontSize: theme.typography.sizes.base, color: theme.colors.textSecondary },
+  bubble: { padding: theme.spacing.lg, gap: theme.spacing.sm },
+  bubbleHeadText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.accent,
+  },
+  bubbleTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bubbleTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+    flex: 1,
+  },
+  bubbleAmount: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.accent,
+  },
+  bubbleMeta: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  shares: { gap: theme.spacing.xs, marginTop: theme.spacing.xs },
+  shareRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  shareName: { flex: 1, fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
+  shareAmount: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
+  },
+  memoryHead: { marginTop: theme.spacing.md },
+  sectionTitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
+  },
+  sectionHint: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  listCard: { paddingHorizontal: theme.spacing.lg },
   memoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
   },
-  memoryContent: { flex: 1, fontSize: 15 },
-  memoryDelete: { color: '#c0392b', fontSize: 13, fontWeight: '600' },
-  memoryAbout: { fontSize: 13, color: '#666', marginTop: 8 },
-  subjectChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.hairline },
+  memoryContent: { flex: 1, fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
+  memoryEmpty: { color: theme.colors.textTertiary, fontSize: theme.typography.sizes.sm },
+  aboutLabel: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   chip: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.full,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs + 2,
   },
-  chipActive: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
-  chipText: { fontSize: 13, color: '#333' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
-  tabs: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#1d9e75',
-    borderRadius: 8,
-    overflow: 'hidden',
+  chipActive: { backgroundColor: theme.colors.accent },
+  chipText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.accent,
   },
-  tab: { flex: 1, paddingVertical: 9, alignItems: 'center' },
-  tabActive: { backgroundColor: '#1d9e75' },
-  tabText: { fontSize: 14, color: '#1d9e75', fontWeight: '600' },
-  tabTextActive: { color: '#fff' },
-  searchBlock: { gap: 10 },
-  summary: { fontSize: 16, fontWeight: '600', color: '#1d9e75', marginTop: 4 },
-  filterChip: {
-    backgroundColor: '#f3faf7',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#cce8dd',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  filterChipText: { fontSize: 12, color: '#1d9e75', fontWeight: '600' },
-  resultRow: {
+  chipTextActive: { color: theme.colors.white },
+  summaryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    gap: theme.spacing.sm,
+    padding: theme.spacing.lg,
   },
+  summary: {
+    flex: 1,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
+  },
+  filterChip: {
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.full,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+  },
+  filterChipText: {
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.accent,
+  },
+  resultList: { gap: theme.spacing.sm },
+  resultRow: { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.lg },
   resultMain: { flex: 1, gap: 2 },
-  resultTitle: { fontSize: 16, fontWeight: '500' },
-  resultMeta: { fontSize: 13, color: '#999' },
-  resultAmount: { fontSize: 16, fontWeight: '600' },
+  resultTitle: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
+  },
+  resultMeta: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  resultAmount: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+  },
 });
