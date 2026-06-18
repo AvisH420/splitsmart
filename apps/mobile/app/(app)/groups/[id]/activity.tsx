@@ -1,15 +1,13 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { AnimatedScreen } from '../../../../lib/components/AnimatedScreen';
 import { Avatar } from '../../../../lib/components/Avatar';
+import { GradientBackground } from '../../../../lib/components/GradientBackground';
+import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import { formatMoney } from '../../../../lib/format';
 import { listActivity } from '../../../../lib/repositories/activity';
+import { theme } from '../../../../lib/theme';
 import type { ActivityItem } from '../../../../lib/types';
 
 function describe(item: ActivityItem): { name: string; text: string; amount?: string } {
@@ -35,6 +33,7 @@ function describe(item: ActivityItem): { name: string; text: string; amount?: st
 
 export default function ActivityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,53 +52,75 @@ export default function ActivityScreen() {
     }, [id])
   );
 
-  if (loading) {
-    return <ActivityIndicator style={styles.center} size="large" />;
-  }
-  if (error) {
-    return <Text style={styles.error}>{error}</Text>;
-  }
-
   return (
-    <FlatList
-      style={styles.container}
-      data={items}
-      keyExtractor={(it) => `${it.kind}:${it.id}`}
-      contentContainerStyle={items.length === 0 && styles.center}
-      ListEmptyComponent={<Text style={styles.empty}>No activity yet.</Text>}
-      renderItem={({ item }) => {
-        const d = describe(item);
-        return (
-          <View style={styles.row}>
-            <Avatar name={d.name} uri={item.avatarUrl} size={36} />
-            <View style={styles.body}>
-              <Text style={styles.text}>{d.text}</Text>
-              <Text style={styles.date}>{new Date(item.at).toLocaleString()}</Text>
-            </View>
-            {d.amount ? <Text style={styles.amount}>{d.amount}</Text> : null}
-          </View>
-        );
-      }}
-    />
+    <GradientBackground>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader title="Activity" onBack={() => router.back()} />
+      {loading ? (
+        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+      ) : error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : (
+        <AnimatedScreen>
+          <FlatList
+            data={items}
+            keyExtractor={(it) => `${it.kind}:${it.id}`}
+            contentContainerStyle={
+              items.length === 0 ? styles.emptyContent : styles.listContent
+            }
+            ListEmptyComponent={
+              <Text style={styles.empty}>No activity yet.</Text>
+            }
+            renderItem={({ item, index }) => {
+              const d = describe(item);
+              const isLast = index === items.length - 1;
+              return (
+                <View style={styles.row}>
+                  <View style={styles.rail}>
+                    {!isLast ? <View style={styles.line} /> : null}
+                    <Avatar name={d.name} uri={item.avatarUrl} size={40} />
+                  </View>
+                  <View style={styles.body}>
+                    <Text style={styles.text}>{d.text}</Text>
+                    <Text style={styles.date}>{new Date(item.at).toLocaleString()}</Text>
+                  </View>
+                  {d.amount ? <Text style={styles.amount}>{d.amount}</Text> : null}
+                </View>
+              );
+            }}
+          />
+        </AnimatedScreen>
+      )}
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  empty: { color: '#999', fontSize: 15 },
-  error: { color: '#c0392b', fontSize: 14, padding: 24 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+  center: { flex: 1 },
+  error: {
+    color: theme.colors.negative,
+    fontSize: theme.typography.sizes.sm,
+    padding: theme.spacing.xl,
   },
-  body: { flex: 1, gap: 2 },
-  text: { fontSize: 15 },
-  date: { fontSize: 12, color: '#999' },
-  amount: { fontSize: 15, fontWeight: '600' },
+  listContent: { padding: theme.spacing.xl, paddingBottom: theme.spacing.xxxl },
+  emptyContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
+  empty: { color: theme.colors.textTertiary, fontSize: theme.typography.sizes.base },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
+  rail: { width: 40, alignItems: 'center', paddingBottom: theme.spacing.lg },
+  line: {
+    position: 'absolute',
+    top: 40,
+    bottom: -theme.spacing.lg,
+    width: StyleSheet.hairlineWidth * 2,
+    backgroundColor: theme.colors.hairline,
+  },
+  body: { flex: 1, gap: 2, paddingTop: theme.spacing.xs },
+  text: { fontSize: theme.typography.sizes.base, color: theme.colors.textPrimary },
+  date: { fontSize: theme.typography.sizes.xs, color: theme.colors.textTertiary },
+  amount: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+    paddingTop: theme.spacing.xs,
+  },
 });

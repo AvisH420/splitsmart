@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import {
   Stack,
   useFocusEffect,
@@ -14,8 +15,12 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AnimatedScreen } from '../../../../../lib/components/AnimatedScreen';
 import { Avatar } from '../../../../../lib/components/Avatar';
-import { categoryIcon, categoryLabel } from '../../../../../lib/categories';
+import { GlassCard } from '../../../../../lib/components/GlassCard';
+import { GradientBackground } from '../../../../../lib/components/GradientBackground';
+import { ScreenHeader } from '../../../../../lib/components/ScreenHeader';
+import { categoryLabel } from '../../../../../lib/categories';
 import { formatMoney } from '../../../../../lib/format';
 import {
   deleteExpense,
@@ -23,6 +28,7 @@ import {
   listParticipants,
 } from '../../../../../lib/repositories/expenses';
 import { listMembers } from '../../../../../lib/repositories/members';
+import { theme } from '../../../../../lib/theme';
 import type {
   Expense,
   ExpenseParticipant,
@@ -98,131 +104,165 @@ export default function ExpenseDetailScreen() {
     ]);
   };
 
-  if (loading) {
-    return <ActivityIndicator style={styles.center} size="large" />;
-  }
-  if (error || !expense) {
-    return <Text style={styles.error}>{error ?? 'Expense not found.'}</Text>;
-  }
-
   const formatValue = (p: ExpenseParticipant): string | null => {
-    if (p.split_value == null) return null;
+    if (!expense || p.split_value == null) return null;
     if (expense.split_type === 'percentage') return `${p.split_value}%`;
     if (expense.split_type === 'shares')
       return `${p.split_value} share${p.split_value === 1 ? '' : 's'}`;
-    return null; // exact: the share itself already shows the amount
+    return null;
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: expense.title }} />
+    <GradientBackground>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader
+        title="Expense"
+        onBack={() => router.back()}
+        right={
+          expense ? (
+            <Pressable
+              onPress={() => router.push(`/groups/${id}/expense?expenseId=${expenseId}`)}
+              hitSlop={8}
+            >
+              <Feather name="edit-2" size={18} color={theme.colors.accent} />
+            </Pressable>
+          ) : undefined
+        }
+      />
 
-      <View style={styles.header}>
-        <Text style={styles.amount}>
-          {formatMoney(expense.total_amount, expense.currency)}
-        </Text>
-        <Text style={styles.title}>{expense.title}</Text>
-        <Text style={styles.meta}>
-          {nameFor(expense.paid_by)} paid · {SPLIT_LABEL[expense.split_type]}
-        </Text>
-        <Text style={styles.meta}>
-          {new Date(expense.created_at).toLocaleString()}
-          {expense.updated_at !== expense.created_at ? ' · edited' : ''}
-        </Text>
-        {expense.category ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {categoryIcon(expense.category)} {categoryLabel(expense.category)}
-            </Text>
-          </View>
-        ) : null}
-      </View>
+      {loading ? (
+        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+      ) : error || !expense ? (
+        <Text style={styles.error}>{error ?? 'Expense not found.'}</Text>
+      ) : (
+        <AnimatedScreen>
+          <ScrollView contentContainerStyle={styles.content}>
+            <GlassCard style={styles.hero}>
+              <Text style={styles.amount}>
+                {formatMoney(expense.total_amount, expense.currency)}
+              </Text>
+              <Text style={styles.title}>{expense.title}</Text>
+              <Text style={styles.meta}>
+                {nameFor(expense.paid_by)} paid · {SPLIT_LABEL[expense.split_type]}
+              </Text>
+              {expense.category ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{categoryLabel(expense.category)}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.date}>
+                {new Date(expense.created_at).toLocaleString()}
+                {expense.updated_at !== expense.created_at ? ' · edited' : ''}
+              </Text>
+            </GlassCard>
 
-      <Text style={styles.sectionTitle}>Split breakdown</Text>
-      {participants.map((p) => {
-        const valueLabel = formatValue(p);
-        return (
-          <View key={p.id} style={styles.row}>
-            <Avatar
-              name={nameFor(p.user_id)}
-              uri={memberFor(p.user_id)?.avatar_url}
-              size={32}
-            />
-            <Text style={styles.rowName}>{nameFor(p.user_id)}</Text>
-            {valueLabel ? <Text style={styles.rowValue}>{valueLabel}</Text> : null}
-            <Text style={styles.rowShare}>{formatMoney(p.share_amount)}</Text>
-          </View>
-        );
-      })}
+            <Text style={styles.sectionTitle}>Split breakdown</Text>
+            <GlassCard style={styles.listCard}>
+              {participants.map((p, i) => {
+                const valueLabel = formatValue(p);
+                return (
+                  <View key={p.id} style={[styles.row, i > 0 && styles.divider]}>
+                    <Avatar
+                      name={nameFor(p.user_id)}
+                      uri={memberFor(p.user_id)?.avatar_url}
+                      size={36}
+                    />
+                    <Text style={styles.rowName}>{nameFor(p.user_id)}</Text>
+                    {valueLabel ? <Text style={styles.rowValue}>{valueLabel}</Text> : null}
+                    <Text style={styles.rowShare}>{formatMoney(p.share_amount)}</Text>
+                  </View>
+                );
+              })}
+            </GlassCard>
 
-      <View style={styles.actions}>
-        <Pressable
-          style={[styles.button, styles.editButton]}
-          onPress={() => router.push(`/groups/${id}/expense?expenseId=${expenseId}`)}
-        >
-          <Text style={styles.editText}>Edit</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.button, styles.deleteButton, deleting && styles.disabled]}
-          onPress={onDelete}
-          disabled={deleting}
-        >
-          <Text style={styles.deleteText}>{deleting ? 'Deleting…' : 'Delete'}</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+            <Pressable
+              style={[styles.deleteButton, deleting && styles.disabled]}
+              onPress={onDelete}
+              disabled={deleting}
+            >
+              <Feather name="trash-2" size={16} color={theme.colors.negative} />
+              <Text style={styles.deleteText}>
+                {deleting ? 'Deleting…' : 'Delete expense'}
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </AnimatedScreen>
+      )}
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { paddingBottom: 40 },
   center: { flex: 1 },
-  error: { color: '#c0392b', fontSize: 14, padding: 24 },
-  header: {
-    padding: 24,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
-    gap: 4,
+  error: {
+    color: theme.colors.negative,
+    fontSize: theme.typography.sizes.sm,
+    padding: theme.spacing.xl,
   },
-  amount: { fontSize: 32, fontWeight: '700', color: '#1d9e75' },
-  title: { fontSize: 20, fontWeight: '600' },
-  meta: { fontSize: 13, color: '#999' },
+  content: { padding: theme.spacing.xl, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxxl },
+  hero: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.xs },
+  amount: {
+    fontSize: theme.typography.sizes.display,
+    fontWeight: theme.typography.weights.heavy,
+    color: theme.colors.accent,
+  },
+  title: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
+  },
+  meta: { fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary },
   badge: {
-    alignSelf: 'flex-start',
-    marginTop: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#f3faf7',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#cce8dd',
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.full,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    marginTop: theme.spacing.xs,
   },
-  badgeText: { fontSize: 13, color: '#1d9e75', fontWeight: '600' },
+  badgeText: {
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.accent,
+  },
+  date: { fontSize: theme.typography.sizes.xs, color: theme.colors.textTertiary, marginTop: theme.spacing.xs },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 8,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
   },
+  listCard: { paddingHorizontal: theme.spacing.lg },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
-    gap: 12,
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
   },
-  rowName: { flex: 1, fontSize: 16 },
-  rowValue: { fontSize: 13, color: '#999' },
-  rowShare: { fontSize: 16, fontWeight: '600' },
-  actions: { flexDirection: 'row', gap: 12, padding: 24 },
-  button: { flex: 1, borderRadius: 8, paddingVertical: 13, alignItems: 'center' },
-  editButton: { backgroundColor: '#1d9e75' },
-  editText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  deleteButton: { borderWidth: 1, borderColor: '#c0392b' },
-  deleteText: { color: '#c0392b', fontSize: 16, fontWeight: '600' },
-  disabled: { opacity: 0.6 },
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.hairline,
+  },
+  rowName: {
+    flex: 1,
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textPrimary,
+  },
+  rowValue: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  rowShare: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.md,
+  },
+  disabled: { opacity: 0.5 },
+  deleteText: {
+    color: theme.colors.negative,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+  },
 });

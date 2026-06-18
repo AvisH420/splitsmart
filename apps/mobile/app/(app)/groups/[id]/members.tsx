@@ -1,21 +1,25 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { AnimatedScreen } from '../../../../lib/components/AnimatedScreen';
+import { Button } from '../../../../lib/components/Button';
+import { GradientBackground } from '../../../../lib/components/GradientBackground';
+import { Input } from '../../../../lib/components/Input';
+import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import {
   getPendingInvitation,
   inviteToGroup,
 } from '../../../../lib/repositories/invitations';
+import { theme } from '../../../../lib/theme';
 import { inviteUrl } from '../../../../lib/use-invite-link';
 
 export default function InviteMemberScreen() {
@@ -47,68 +51,56 @@ export default function InviteMemberScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
+    <GradientBackground>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader title="Invite member" onBack={() => router.back()} />
+      <AnimatedScreen>
+        <KeyboardAvoidingView
+          style={styles.fill}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <Text style={styles.label}>Invite by email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="friend@example.com"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            returnKeyType="done"
-            onSubmitEditing={() => email.trim() && onInvite()}
-          />
-          <Text style={styles.hint}>
-            If they already have a SplitSmart account they’ll be added right away.
-            Otherwise we’ll create an invite link for you to share.
-          </Text>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <ScrollView
+              contentContainerStyle={styles.content}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Input
+                label="Email address"
+                placeholder="friend@example.com"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+                returnKeyType="done"
+                onSubmitEditing={() => email.trim() && onInvite()}
+              />
+              <Text style={styles.hint}>
+                If they already have a SplitSmart account they’ll be added right
+                away. Otherwise we’ll create an invite link for you to share.
+              </Text>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Pressable
-            style={[styles.button, (submitting || !email.trim()) && styles.buttonDisabled]}
-            onPress={onInvite}
-            disabled={submitting || !email.trim()}
-          >
-            <Text style={styles.buttonText}>{submitting ? 'Inviting…' : 'Invite'}</Text>
-          </Pressable>
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+              <Button
+                title="Send invite"
+                onPress={onInvite}
+                loading={submitting}
+                disabled={!email.trim()}
+                style={styles.submit}
+              />
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </AnimatedScreen>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, gap: 8 },
-  label: { fontSize: 14, color: '#666' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  hint: { fontSize: 13, color: '#999' },
-  error: { color: '#c0392b', fontSize: 14 },
-  button: {
-    backgroundColor: '#1d9e75',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  fill: { flex: 1 },
+  content: { padding: theme.spacing.xl, gap: theme.spacing.md },
+  hint: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  error: { color: theme.colors.negative, fontSize: theme.typography.sizes.sm },
+  submit: { marginTop: theme.spacing.sm },
 });
