@@ -175,6 +175,15 @@ export type Invitation = {
 /** Result of the invite_to_group RPC. */
 export type InviteResult = 'added' | 'invited';
 
+/** A user's Expo push token (one row per user). */
+export type PushToken = {
+  id: string;
+  user_id: string;
+  token: string;
+  created_at: string;
+  updated_at: string;
+};
+
 /** A stored group memory (preference / rule / habit) about a member or group. */
 export type GroupMemory = {
   id: string;

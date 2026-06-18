@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -41,6 +42,14 @@ export default function GroupsScreen() {
         options={{
           headerRight: () => (
             <View style={styles.headerRight}>
+              <Pressable
+                onPress={() =>
+                  groups[0] && router.push(`/groups/${groups[0].id}/activity`)
+                }
+                hitSlop={8}
+              >
+                <Feather name="bell" size={20} color="#1d9e75" />
+              </Pressable>
               <Pressable onPress={() => router.push('/profile')} hitSlop={8}>
                 <Text style={styles.headerIcon}>👤</Text>
               </Pressable>
