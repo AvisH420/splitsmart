@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import {
   Stack,
   useFocusEffect,
@@ -7,20 +8,25 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { Avatar } from '../../../../lib/components/Avatar';
+import { useAuth } from '../../../../lib/auth-context';
 import { computeBalances } from '../../../../lib/balances';
 import { EXPENSE_CATEGORIES } from '../../../../lib/categories';
-import { computeGroupSummary, type GroupSummary } from '../../../../lib/stats';
+import { AnimatedScreen } from '../../../../lib/components/AnimatedScreen';
+import { Avatar } from '../../../../lib/components/Avatar';
+import { Button } from '../../../../lib/components/Button';
+import { GlassCard } from '../../../../lib/components/GlassCard';
+import { GradientBackground } from '../../../../lib/components/GradientBackground';
+import { Input } from '../../../../lib/components/Input';
+import { PressableScale } from '../../../../lib/components/PressableScale';
+import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import { formatMoney } from '../../../../lib/format';
 import {
   listExpenses,
@@ -30,6 +36,7 @@ import { getGroup } from '../../../../lib/repositories/groups';
 import { listMembers } from '../../../../lib/repositories/members';
 import { listMemories } from '../../../../lib/repositories/memories';
 import { listSettlements } from '../../../../lib/repositories/settlements';
+import { theme } from '../../../../lib/theme';
 import type {
   Expense,
   ExpenseCategory,
@@ -42,28 +49,19 @@ import type {
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { session } = useAuth();
+  const currentUserId = session?.user?.id;
 
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [balances, setBalances] = useState<MemberBalance[]>([]);
-  const [summary, setSummary] = useState<GroupSummary | null>(null);
   const [memories, setMemories] = useState<GroupMemory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Client-side search/filter state (data is already loaded; no new queries).
-  const [memberQuery, setMemberQuery] = useState('');
   const [expenseQuery, setExpenseQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | null>(null);
-
-  const filteredMembers = useMemo(() => {
-    const q = memberQuery.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter((m) =>
-      m.profile.display_name.toLowerCase().includes(q)
-    );
-  }, [members, memberQuery]);
 
   const filteredExpenses = useMemo(() => {
     const q = expenseQuery.trim().toLowerCase();
@@ -93,7 +91,6 @@ export default function GroupDetailScreen() {
           setMembers(mem);
           setExpenses(exp);
           setBalances(computeBalances(mem, exp, parts, setl));
-          setSummary(computeGroupSummary(mem, exp, parts, setl));
           setMemories(mems);
         } catch (e) {
           if (active) setError((e as Error).message);
@@ -107,296 +104,420 @@ export default function GroupDetailScreen() {
     }, [id])
   );
 
-  if (loading) {
-    return <ActivityIndicator style={styles.center} size="large" />;
-  }
-  if (error) {
-    return <Text style={styles.error}>{error}</Text>;
-  }
-
   const nameFor = (userId: string) =>
     members.find((m) => m.user_id === userId)?.profile.display_name ?? 'Someone';
-
   const memoriesFor = (userId: string) =>
     memories.filter((m) => m.subject_user_id === userId);
 
-  const showMemories = (userId: string) => {
-    const list = memoriesFor(userId);
-    Alert.alert(
-      `${nameFor(userId)}'s memory`,
-      list.map((m) => `• ${m.content}`).join('\n') || 'No memories.'
+  const myNet = balances.find((b) => b.userId === currentUserId)?.net ?? 0;
+  const totalSpent = expenses.reduce((a, e) => a + e.total_amount, 0);
+
+  const header = (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader
+        title={group?.name ?? 'Group'}
+        onBack={() => router.back()}
+        right={
+          <>
+            <Pressable
+              onPress={() => router.push({ pathname: '/assistant', params: { group_id: id } })}
+              hitSlop={8}
+            >
+              <Feather name="zap" size={20} color={theme.colors.accent} />
+            </Pressable>
+            <Pressable onPress={() => router.push(`/groups/${id}/receipt`)} hitSlop={8}>
+              <Feather name="camera" size={20} color={theme.colors.accent} />
+            </Pressable>
+            <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
+              <Feather name="clock" size={20} color={theme.colors.accent} />
+            </Pressable>
+          </>
+        }
+      />
+    </>
+  );
+
+  if (loading) {
+    return (
+      <GradientBackground>
+        {header}
+        <ActivityIndicator style={styles.center} size="large" color={theme.colors.accent} />
+      </GradientBackground>
     );
-  };
+  }
+  if (error) {
+    return (
+      <GradientBackground>
+        {header}
+        <Text style={styles.error}>{error}</Text>
+      </GradientBackground>
+    );
+  }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Stack.Screen
-        options={{
-          title: group?.name ?? 'Group',
-          headerRight: () => (
-            <View style={styles.headerRight}>
-              <Pressable
-                onPress={() =>
-                  router.push({ pathname: '/assistant', params: { group_id: id } })
-                }
-                hitSlop={8}
-              >
-                <Text style={styles.headerIcon}>✨</Text>
-              </Pressable>
-              <Pressable onPress={() => router.push(`/groups/${id}/receipt`)} hitSlop={8}>
-                <Text style={styles.headerIcon}>🧾</Text>
-              </Pressable>
-              <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
-                <Text style={styles.action}>Activity</Text>
-              </Pressable>
-            </View>
-          ),
-        }}
-      />
-
-      {/* Summary */}
-      {summary ? (
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>
-              {formatMoney(summary.totalSpent)}
-            </Text>
-            <Text style={styles.summaryLabel}>Total spent</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{summary.expenseCount}</Text>
-            <Text style={styles.summaryLabel}>
-              {summary.expenseCount === 1 ? 'Expense' : 'Expenses'}
-            </Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>
-              {formatMoney(summary.totalSettled)}
-            </Text>
-            <Text style={styles.summaryLabel}>Settled</Text>
-          </View>
-        </View>
-      ) : null}
-
-      {/* Balances */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Balances</Text>
-        <Pressable onPress={() => router.push(`/groups/${id}/settle`)}>
-          <Text style={styles.action}>Settle up</Text>
-        </Pressable>
-      </View>
-      {balances.map((b) => (
-        <View key={b.userId} style={styles.row}>
-          <Text style={styles.rowTitle}>{b.displayName}</Text>
-          <Text
-            style={[
-              styles.balance,
-              b.net > 0 ? styles.positive : b.net < 0 ? styles.negative : styles.zero,
-            ]}
-          >
-            {b.net > 0
-              ? `gets back ${formatMoney(b.net)}`
-              : b.net < 0
-                ? `owes ${formatMoney(-b.net)}`
-                : 'settled up'}
-          </Text>
-        </View>
-      ))}
-
-      {/* Members */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Members ({members.length})</Text>
-        <Pressable onPress={() => router.push(`/groups/${id}/members`)}>
-          <Text style={styles.action}>+ Invite</Text>
-        </Pressable>
-      </View>
-      {members.length > 3 ? (
-        <TextInput
-          style={styles.search}
-          placeholder="Search members"
-          value={memberQuery}
-          onChangeText={setMemberQuery}
-          autoCapitalize="none"
-        />
-      ) : null}
-      {filteredMembers.length === 0 ? (
-        <Text style={styles.empty}>No members match “{memberQuery}”.</Text>
-      ) : (
-        filteredMembers.map((m) => (
-          <View key={m.user_id} style={styles.row}>
-            <Avatar name={m.profile.display_name} uri={m.profile.avatar_url} size={32} />
-            <Text style={[styles.rowTitle, styles.rowTitleWithAvatar]}>
-              {m.profile.display_name}
-            </Text>
-            {memoriesFor(m.user_id).length > 0 ? (
-              <Pressable onPress={() => showMemories(m.user_id)} hitSlop={8}>
-                <Text style={styles.brain}>🧠</Text>
-              </Pressable>
-            ) : null}
-            <Text style={styles.rowMeta}>{m.role}</Text>
-          </View>
-        ))
-      )}
-
-      {/* Expenses */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Expenses ({expenses.length})</Text>
-        <Pressable onPress={() => router.push(`/groups/${id}/expense`)}>
-          <Text style={styles.action}>+ Add</Text>
-        </Pressable>
-      </View>
-      {expenses.length === 0 ? (
-        <Text style={styles.empty}>No expenses yet.</Text>
-      ) : (
-        <>
-          <TextInput
-            style={styles.search}
-            placeholder="Search expenses"
-            value={expenseQuery}
-            onChangeText={setExpenseQuery}
-            autoCapitalize="none"
-          />
+    <GradientBackground>
+      {header}
+      <AnimatedScreen>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterRow}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
           >
-            <Pressable
-              style={[styles.filterChip, categoryFilter === null && styles.filterChipActive]}
-              onPress={() => setCategoryFilter(null)}
-            >
+            {/* Balance hero */}
+            <GlassCard style={styles.hero}>
+              <Text style={styles.heroLabel}>Your balance</Text>
               <Text
                 style={[
-                  styles.filterChipText,
-                  categoryFilter === null && styles.filterChipTextActive,
+                  styles.heroAmount,
+                  myNet > 0 ? styles.positive : myNet < 0 ? styles.negative : styles.neutral,
                 ]}
               >
-                All
+                {myNet === 0 ? 'All settled' : formatMoney(Math.abs(myNet))}
               </Text>
-            </Pressable>
-            {EXPENSE_CATEGORIES.map((c) => (
-              <Pressable
-                key={c.value}
-                style={[
-                  styles.filterChip,
-                  categoryFilter === c.value && styles.filterChipActive,
-                ]}
-                onPress={() =>
-                  setCategoryFilter((cur) => (cur === c.value ? null : c.value))
-                }
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    categoryFilter === c.value && styles.filterChipTextActive,
-                  ]}
-                >
-                  {c.icon} {c.label}
+              {myNet !== 0 ? (
+                <Text style={styles.heroSub}>
+                  {myNet > 0 ? 'you are owed overall' : 'you owe overall'}
                 </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          {filteredExpenses.length === 0 ? (
-            <Text style={styles.empty}>No expenses match your filters.</Text>
-          ) : (
-            filteredExpenses.map((e) => (
-              <Pressable
-                key={e.id}
-                style={styles.row}
-                onPress={() => router.push(`/groups/${id}/expenses/${e.id}`)}
-              >
-                <View style={styles.expenseMain}>
-                  <Text style={styles.rowTitle}>{e.title}</Text>
-                  <Text style={styles.rowMeta}>{nameFor(e.paid_by)} paid</Text>
+              ) : null}
+
+              <View style={styles.statsRow}>
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{formatMoney(totalSpent)}</Text>
+                  <Text style={styles.statLabel}>Total spent</Text>
                 </View>
-                <Text style={styles.amount}>
-                  {formatMoney(e.total_amount, e.currency)}
-                </Text>
-                <Text style={styles.rowChevron}>›</Text>
+                <View style={styles.statDivider} />
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{expenses.length}</Text>
+                  <Text style={styles.statLabel}>
+                    {expenses.length === 1 ? 'Expense' : 'Expenses'}
+                  </Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{members.length}</Text>
+                  <Text style={styles.statLabel}>
+                    {members.length === 1 ? 'Member' : 'Members'}
+                  </Text>
+                </View>
+              </View>
+
+              <Button
+                title="Settle up"
+                variant="secondary"
+                onPress={() => router.push(`/groups/${id}/settle`)}
+                style={styles.heroButton}
+              />
+            </GlassCard>
+
+            {/* Balances */}
+            <Text style={styles.sectionTitle}>Balances</Text>
+            <GlassCard style={styles.listCard}>
+              {balances.map((b, i) => (
+                <View
+                  key={b.userId}
+                  style={[styles.listRow, i > 0 && styles.divider]}
+                >
+                  <Avatar
+                    name={b.displayName}
+                    uri={members.find((m) => m.user_id === b.userId)?.profile.avatar_url}
+                    size={36}
+                  />
+                  <Text style={styles.rowName}>{b.displayName}</Text>
+                  <View style={styles.balanceRight}>
+                    <Text
+                      style={[
+                        styles.balanceAmount,
+                        b.net > 0 ? styles.positive : b.net < 0 ? styles.negative : styles.neutral,
+                      ]}
+                    >
+                      {b.net === 0 ? 'settled' : formatMoney(Math.abs(b.net))}
+                    </Text>
+                    {b.net !== 0 ? (
+                      <Text style={styles.balanceLabel}>
+                        {b.net > 0 ? 'owed' : 'owes'}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              ))}
+            </GlassCard>
+
+            {/* Members */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Members</Text>
+              <Pressable
+                onPress={() => router.push(`/groups/${id}/members`)}
+                hitSlop={8}
+                style={styles.sectionAction}
+              >
+                <Feather name="user-plus" size={16} color={theme.colors.accent} />
+                <Text style={styles.actionText}>Invite</Text>
               </Pressable>
-            ))
-          )}
-        </>
-      )}
-    </ScrollView>
-    </TouchableWithoutFeedback>
+            </View>
+            <GlassCard style={styles.listCard}>
+              {members.map((m, i) => (
+                <View
+                  key={m.user_id}
+                  style={[styles.listRow, i > 0 && styles.divider]}
+                >
+                  <Avatar name={m.profile.display_name} uri={m.profile.avatar_url} size={36} />
+                  <Text style={styles.rowName}>{m.profile.display_name}</Text>
+                  {memoriesFor(m.user_id).length > 0 ? (
+                    <Pressable
+                      onPress={() =>
+                        router.push({ pathname: '/assistant', params: { group_id: id } })
+                      }
+                      hitSlop={8}
+                    >
+                      <Feather name="cpu" size={16} color={theme.colors.accentLight} />
+                    </Pressable>
+                  ) : null}
+                  <Text style={styles.roleBadge}>{m.role}</Text>
+                </View>
+              ))}
+            </GlassCard>
+
+            {/* Expenses */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Expenses</Text>
+              <Pressable
+                onPress={() => router.push(`/groups/${id}/expense`)}
+                hitSlop={8}
+                style={styles.sectionAction}
+              >
+                <Feather name="plus" size={16} color={theme.colors.accent} />
+                <Text style={styles.actionText}>Add</Text>
+              </Pressable>
+            </View>
+
+            {expenses.length === 0 ? (
+              <GlassCard style={styles.emptyCard}>
+                <Feather name="file-text" size={32} color={theme.colors.textTertiary} />
+                <Text style={styles.emptyTitle}>No expenses yet</Text>
+                <Text style={styles.emptyBody}>
+                  Add one manually, describe it to the assistant, or scan a receipt.
+                </Text>
+              </GlassCard>
+            ) : (
+              <>
+                <Input
+                  placeholder="Search expenses"
+                  value={expenseQuery}
+                  onChangeText={setExpenseQuery}
+                  autoCapitalize="none"
+                  style={styles.search}
+                />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.filterRow}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <FilterChip
+                    label="All"
+                    active={categoryFilter === null}
+                    onPress={() => setCategoryFilter(null)}
+                  />
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <FilterChip
+                      key={c.value}
+                      label={c.label}
+                      active={categoryFilter === c.value}
+                      onPress={() =>
+                        setCategoryFilter((cur) => (cur === c.value ? null : c.value))
+                      }
+                    />
+                  ))}
+                </ScrollView>
+
+                {filteredExpenses.length === 0 ? (
+                  <Text style={styles.noMatch}>No expenses match your filters.</Text>
+                ) : (
+                  <View style={styles.expenseList}>
+                    {filteredExpenses.map((e) => (
+                      <PressableScale
+                        key={e.id}
+                        onPress={() => router.push(`/groups/${id}/expenses/${e.id}`)}
+                      >
+                        <GlassCard style={styles.expenseRow}>
+                          <View style={styles.expenseMain}>
+                            <Text style={styles.expenseTitle}>{e.title}</Text>
+                            <Text style={styles.expenseMeta}>{nameFor(e.paid_by)} paid</Text>
+                          </View>
+                          <Text style={styles.expenseAmount}>
+                            {formatMoney(e.total_amount, e.currency)}
+                          </Text>
+                        </GlassCard>
+                      </PressableScale>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </AnimatedScreen>
+    </GradientBackground>
+  );
+}
+
+function FilterChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.filterChip, active && styles.filterChipActive]}
+    >
+      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { paddingBottom: 40 },
+  content: { padding: theme.spacing.xl, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxxl },
   center: { flex: 1 },
-  error: { color: '#c0392b', fontSize: 14, padding: 24 },
+  error: {
+    color: theme.colors.negative,
+    fontSize: theme.typography.sizes.sm,
+    padding: theme.spacing.xl,
+  },
+  hero: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.xs },
+  heroLabel: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.textSecondary,
+  },
+  heroAmount: {
+    fontSize: theme.typography.sizes.display,
+    fontWeight: theme.typography.weights.heavy,
+  },
+  heroSub: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    marginTop: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.hairline,
+  },
+  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: '70%',
+    backgroundColor: theme.colors.hairline,
+  },
+  statValue: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+  },
+  statLabel: { fontSize: theme.typography.sizes.xs, color: theme.colors.textTertiary },
+  heroButton: { marginTop: theme.spacing.lg, alignSelf: 'stretch' },
+  sectionTitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 8,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
-  action: { color: '#1d9e75', fontSize: 15, fontWeight: '600' },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  headerIcon: { fontSize: 18 },
-  summaryCard: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    marginTop: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: '#f3faf7',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#cce8dd',
+  sectionAction: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  actionText: {
+    color: theme.colors.accent,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
   },
-  summaryItem: { flex: 1, alignItems: 'center', gap: 2 },
-  summaryValue: { fontSize: 16, fontWeight: '700', color: '#1d9e75' },
-  summaryLabel: { fontSize: 12, color: '#777' },
-  rowChevron: { fontSize: 22, color: '#ccc', marginLeft: 8 },
-  search: {
-    marginHorizontal: 20,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    fontSize: 15,
-  },
-  filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingBottom: 8 },
-  filterChip: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  filterChipActive: { backgroundColor: '#1d9e75', borderColor: '#1d9e75' },
-  filterChipText: { fontSize: 13, color: '#333' },
-  filterChipTextActive: { color: '#fff', fontWeight: '600' },
-  row: {
+  listCard: { paddingHorizontal: theme.spacing.lg },
+  listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
   },
-  rowTitle: { fontSize: 16, fontWeight: '500' },
-  rowTitleWithAvatar: { flex: 1, marginLeft: 12 },
-  brain: { fontSize: 16, marginRight: 10 },
-  rowMeta: { fontSize: 13, color: '#999' },
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.hairline,
+  },
+  rowName: {
+    flex: 1,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.textPrimary,
+  },
+  balanceRight: { alignItems: 'flex-end' },
+  balanceAmount: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+  },
+  balanceLabel: { fontSize: theme.typography.sizes.xs, color: theme.colors.textTertiary },
+  roleBadge: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textTertiary,
+    textTransform: 'capitalize',
+  },
+  positive: { color: theme.colors.positive },
+  negative: { color: theme.colors.negative },
+  neutral: { color: theme.colors.textSecondary },
+  search: { marginBottom: theme.spacing.xs },
+  filterRow: { flexDirection: 'row', gap: theme.spacing.sm, paddingVertical: theme.spacing.xs },
+  filterChip: {
+    backgroundColor: theme.colors.accentSubtle,
+    borderRadius: theme.radii.full,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs + 2,
+  },
+  filterChipActive: { backgroundColor: theme.colors.accent },
+  filterChipText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.accent,
+  },
+  filterChipTextActive: { color: theme.colors.white },
+  expenseList: { gap: theme.spacing.sm },
+  expenseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
   expenseMain: { flex: 1, gap: 2 },
-  amount: { fontSize: 16, fontWeight: '600' },
-  balance: { flex: 1, textAlign: 'right', fontSize: 15, fontWeight: '500' },
-  positive: { color: '#1d9e75' },
-  negative: { color: '#c0392b' },
-  zero: { color: '#999' },
-  empty: { color: '#999', paddingHorizontal: 20, paddingVertical: 12 },
+  expenseTitle: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
+  },
+  expenseMeta: { fontSize: theme.typography.sizes.sm, color: theme.colors.textTertiary },
+  expenseAmount: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+  },
+  noMatch: {
+    color: theme.colors.textTertiary,
+    fontSize: theme.typography.sizes.sm,
+    paddingVertical: theme.spacing.sm,
+  },
+  emptyCard: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.sm },
+  emptyTitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+  },
+  emptyBody: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
 });
