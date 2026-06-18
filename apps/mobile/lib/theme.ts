@@ -29,9 +29,13 @@ export const theme = {
     warning: '#C4934A', // warm amber
 
     // Glass
-    glassBackground: 'rgba(250, 248, 245, 0.85)',
+    glassBackground: 'rgba(250, 248, 245, 0.85)', // Android solid fallback
     glassBorder: 'rgba(255, 255, 255, 0.6)',
     glassShadow: 'rgba(139, 111, 71, 0.12)',
+    glassTint: 'rgba(255, 253, 250, 0.4)', // faint warm wash over the iOS blur
+    glassHighlight: 'rgba(255, 255, 255, 0.5)', // top hairline highlight on glass
+    tabBarTint: 'rgba(252, 250, 247, 0.55)', // warm wash over the tab bar blur
+    hairline: 'rgba(210, 195, 178, 0.5)', // subtle divider on cream
 
     // Fixed
     white: '#FFFFFF',

@@ -17,35 +17,59 @@ const TABS: Record<string, { label: string; icon: FeatherName }> = {
 };
 
 /**
- * Floating frosted-glass pill tab bar (see docs/design-references/
- * whatsapp-navbar.jpg). Active tab gets an accentSubtle pill behind its
- * icon + label; inactive tabs render in textTertiary.
+ * Floating frosted-glass pill tab bar (quality bar: docs/design-references/
+ * whatsapp-navbar.jpg). On iOS the bar is transparent over a BlurView that
+ * frosts the content scrolling beneath it, with a warm tint, a hairline border
+ * and a soft floating shadow. Android uses a solid warm fill + elevation.
+ * Active tab: accent icon + label over a soft accentSubtle pill. Inactive:
+ * tertiary text, no fill.
  */
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const routes = state.routes.filter((r) => TABS[r.name]);
+  const isIOS = Platform.OS === 'ios';
 
   return (
     <View
-      style={[styles.container, { bottom: Math.max(insets.bottom, theme.spacing.xl) }]}
+      style={[
+        styles.container,
+        isIOS ? styles.containerIOS : styles.containerAndroid,
+        { bottom: Math.max(insets.bottom, theme.spacing.md) },
+      ]}
     >
-      {Platform.OS === 'ios' ? (
-        <BlurView
-          intensity={30}
-          tint="light"
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
+      {isIOS ? (
+        <>
+          <BlurView
+            intensity={40}
+            tint="light"
+            style={[StyleSheet.absoluteFill, styles.clip]}
+            pointerEvents="none"
+          />
+          <View
+            style={[StyleSheet.absoluteFill, styles.clip, styles.tint]}
+            pointerEvents="none"
+          />
+        </>
       ) : null}
-      {routes.map((route) => {
+
+      {state.routes.map((route) => {
         const config = TABS[route.name];
+        if (!config) return null;
         const isActive = state.routes[state.index]?.key === route.key;
         const color = isActive ? theme.colors.accent : theme.colors.textTertiary;
         return (
           <Pressable
             key={route.key}
             style={styles.tab}
-            onPress={() => navigation.navigate(route.name)}
+            onPress={() => {
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+              if (!isActive && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            }}
           >
             <View style={[styles.pill, isActive && styles.pillActive]}>
               <Feather name={config.icon} size={20} color={color} />
@@ -63,26 +87,34 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: theme.spacing.xl,
-    right: theme.spacing.xl,
+    left: theme.spacing.lg,
+    right: theme.spacing.lg,
     flexDirection: 'row',
-    backgroundColor: theme.colors.glassBackground,
-    borderColor: theme.colors.glassBorder,
-    borderWidth: 1,
     borderRadius: theme.radii.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.glassBorder,
     paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.sm,
-    overflow: 'hidden',
+    paddingHorizontal: theme.spacing.xs,
+  },
+  containerIOS: {
+    backgroundColor: 'transparent',
     ...theme.shadows.lg,
   },
+  containerAndroid: {
+    backgroundColor: theme.colors.glassBackground,
+    elevation: 8,
+  },
+  clip: { borderRadius: theme.radii.xl },
+  tint: { backgroundColor: theme.colors.tabBarTint },
   tab: {
     flex: 1,
     alignItems: 'center',
     gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.xs,
   },
   pill: {
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.xs,
+    paddingVertical: theme.spacing.xs + 1,
     borderRadius: theme.radii.full,
   },
   pillActive: { backgroundColor: theme.colors.accentSubtle },
