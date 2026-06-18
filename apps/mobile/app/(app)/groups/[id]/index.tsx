@@ -7,6 +7,8 @@ import {
 } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Keyboard,
   Pressable,
   ScrollView,
@@ -15,6 +17,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import * as Sharing from 'expo-sharing';
 import { useAuth } from '../../../../lib/auth-context';
 import { computeBalances } from '../../../../lib/balances';
 import { EXPENSE_CATEGORIES } from '../../../../lib/categories';
@@ -30,6 +33,7 @@ import { PressableScale } from '../../../../lib/components/PressableScale';
 import { ScreenHeader } from '../../../../lib/components/ScreenHeader';
 import { Skeleton } from '../../../../lib/components/Skeleton';
 import { formatMoney } from '../../../../lib/format';
+import { generateGroupPDF } from '../../../../lib/utils/exportPdf';
 import {
   listExpenses,
   listParticipantsForGroup,
@@ -47,6 +51,7 @@ import type {
   GroupMemberWithProfile,
   GroupMemory,
   MemberBalance,
+  Settlement,
 } from '../../../../lib/types';
 
 export default function GroupDetailScreen() {
@@ -61,7 +66,9 @@ export default function GroupDetailScreen() {
   const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [balances, setBalances] = useState<MemberBalance[]>([]);
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [memories, setMemories] = useState<GroupMemory[]>([]);
+  const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +103,7 @@ export default function GroupDetailScreen() {
           setGroup(g);
           setMembers(mem);
           setExpenses(exp);
+          setSettlements(setl);
           setBalances(computeBalances(mem, exp, parts, setl, pyrs));
           setMemories(mems);
         } catch (e) {
@@ -118,6 +126,25 @@ export default function GroupDetailScreen() {
   const myNet = balances.find((b) => b.userId === currentUserId)?.net ?? 0;
   const totalSpent = expenses.reduce((a, e) => a + e.total_amount, 0);
 
+  const onExport = async () => {
+    if (!group || exporting) return;
+    setExporting(true);
+    try {
+      const uri = await generateGroupPDF(group, members, expenses, settlements, balances);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          UTI: 'com.adobe.pdf',
+          dialogTitle: `${group.name} summary`,
+        });
+      }
+    } catch (e) {
+      Alert.alert('Export failed', (e as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const header = (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -137,6 +164,13 @@ export default function GroupDetailScreen() {
             </Pressable>
             <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
               <Feather name="clock" size={20} color={t.colors.accent} />
+            </Pressable>
+            <Pressable onPress={onExport} disabled={exporting} hitSlop={8}>
+              {exporting ? (
+                <ActivityIndicator size="small" color={t.colors.accent} />
+              ) : (
+                <Feather name="download" size={20} color={t.colors.accent} />
+              )}
             </Pressable>
           </>
         }
