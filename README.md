@@ -35,10 +35,10 @@ What separates it from tools like Splitwise is the AI layer. You can type an exp
 
 <table>
   <tr>
-    <td align="center" valign="top" width="25%"><video src="https://github.com/AvisH420/splitsmart/raw/main/docs/readme-assets/app-overview.mov" width="200" controls muted></video></td>
-    <td align="center" valign="top" width="25%"><video src="https://github.com/AvisH420/splitsmart/raw/main/docs/readme-assets/ai-assistant-parsing.mov" width="200" controls muted></video></td>
-    <td align="center" valign="top" width="25%"><video src="https://github.com/AvisH420/splitsmart/raw/main/docs/readme-assets/expense-search.mov" width="200" controls muted></video></td>
-    <td align="center" valign="top" width="25%"><video src="https://github.com/AvisH420/splitsmart/raw/main/docs/readme-assets/receipt-itemization.mp4" width="200" controls muted></video></td>
+    <td align="center" valign="top" width="25%"><video src="https://github.com/user-attachments/assets/706773f0-1187-4738-82a0-bfd581af14bf" width="200" controls muted></video></td>
+    <td align="center" valign="top" width="25%"><video src="https://github.com/user-attachments/assets/63222433-8cd5-4440-b4f4-7fc260f10be0" width="200" controls muted></video></td>
+    <td align="center" valign="top" width="25%"><video src="https://github.com/user-attachments/assets/3dc317fd-c9c1-425d-aa40-0b8cebfb1ded" width="200" controls muted></video></td>
+    <td align="center" valign="top" width="25%"><video src="https://github.com/user-attachments/assets/6a93ab12-d995-47d5-9347-83e9a8bdb635" width="200" controls muted></video></td>
   </tr>
   <tr>
     <td align="center">App Overview</td>
