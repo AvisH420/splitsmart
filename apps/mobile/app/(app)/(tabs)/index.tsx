@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../lib/auth-context';
 import { computeBalances } from '../../../lib/balances';
 import { AnimatedListItem } from '../../../lib/components/AnimatedListItem';
@@ -134,7 +134,11 @@ export default function GroupsScreen() {
                 <AnimatedListItem index={index}>
                   <PressableScale onPress={() => router.push(`/groups/${item.id}`)}>
                     <GlassCard style={styles.row}>
-                      <View style={styles.accentBar} />
+                      {item.cover_url ? (
+                        <Image source={{ uri: item.cover_url }} style={styles.thumb} />
+                      ) : (
+                        <View style={styles.accentBar} />
+                      )}
                       <View style={styles.rowMain}>
                         <Text style={styles.rowTitle}>{item.name}</Text>
                         {stat ? (
@@ -213,6 +217,13 @@ const makeStyles = (t: Theme) =>
       width: 3,
       borderRadius: 2,
       backgroundColor: t.colors.accent,
+    },
+    thumb: {
+      width: 40,
+      height: 40,
+      borderRadius: 8,
+      marginRight: t.spacing.md,
+      backgroundColor: t.colors.accentSubtle,
     },
     rowMain: { flex: 1, gap: 3 },
     rowTitle: {

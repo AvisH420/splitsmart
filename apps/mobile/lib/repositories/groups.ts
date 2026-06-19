@@ -1,3 +1,4 @@
+import { decode } from 'base64-arraybuffer';
 import { supabase } from '../supabase';
 import type { Group } from '../types';
 import { unwrap, unwrapList } from './util';
@@ -43,4 +44,39 @@ export async function createGroup(name: string): Promise<Group> {
   if (memberError) throw new Error(memberError.message);
 
   return group;
+}
+
+/** Set (or clear) a group's cover photo URL. RLS allows any member. */
+export async function updateGroupCover(
+  groupId: string,
+  coverUrl: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('groups')
+    .update({ cover_url: coverUrl })
+    .eq('id', groupId);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Upload a picked image (base64) as the group cover to the avatars bucket at
+ * groups/<id>.jpg, persist its public URL, and return it. Cache-busted because
+ * the object name never changes.
+ */
+export async function uploadGroupCover(
+  groupId: string,
+  base64: string
+): Promise<string> {
+  const path = `groups/${groupId}.jpg`;
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, decode(base64), { contentType: 'image/jpeg', upsert: true });
+  if (uploadError) throw new Error(uploadError.message);
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('avatars').getPublicUrl(path);
+  const url = `${publicUrl}?t=${Date.now()}`;
+  await updateGroupCover(groupId, url);
+  return url;
 }

@@ -9,6 +9,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
   Keyboard,
   Pressable,
   ScrollView,
@@ -17,7 +18,10 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../../lib/auth-context';
 import { computeBalances } from '../../../../lib/balances';
 import { EXPENSE_CATEGORIES } from '../../../../lib/categories';
@@ -39,7 +43,7 @@ import {
   listParticipantsForGroup,
   listPayersForGroup,
 } from '../../../../lib/repositories/expenses';
-import { getGroup } from '../../../../lib/repositories/groups';
+import { getGroup, uploadGroupCover } from '../../../../lib/repositories/groups';
 import { listMembers } from '../../../../lib/repositories/members';
 import { listMemories } from '../../../../lib/repositories/memories';
 import { listSettlements } from '../../../../lib/repositories/settlements';
@@ -61,6 +65,7 @@ export default function GroupDetailScreen() {
   const currentUserId = session?.user?.id;
   const t = useTheme();
   const styles = makeStyles(t);
+  const insets = useSafeAreaInsets();
 
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
@@ -145,7 +150,76 @@ export default function GroupDetailScreen() {
     }
   };
 
-  const header = (
+  const pickCover = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permission needed', 'Allow photo access to set a group cover.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.6,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]?.base64) return;
+    try {
+      const url = await uploadGroupCover(id, result.assets[0].base64);
+      setGroup((g) => (g ? { ...g, cover_url: url } : g));
+    } catch (e) {
+      Alert.alert('Upload failed', (e as Error).message);
+    }
+  };
+
+  const renderActions = (color: string) => (
+    <>
+      <Pressable
+        onPress={() => router.push({ pathname: '/assistant', params: { group_id: id } })}
+        hitSlop={8}
+      >
+        <Feather name="zap" size={20} color={color} />
+      </Pressable>
+      <Pressable onPress={() => router.push(`/groups/${id}/receipt`)} hitSlop={8}>
+        <Feather name="camera" size={20} color={color} />
+      </Pressable>
+      <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
+        <Feather name="clock" size={20} color={color} />
+      </Pressable>
+      <Pressable onPress={onExport} disabled={exporting} hitSlop={8}>
+        {exporting ? (
+          <ActivityIndicator size="small" color={color} />
+        ) : (
+          <Feather name="download" size={20} color={color} />
+        )}
+      </Pressable>
+    </>
+  );
+
+  const header = group?.cover_url ? (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ImageBackground
+        source={{ uri: group.cover_url }}
+        style={[styles.cover, { height: 160 + insets.top }]}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[styles.coverTop, { paddingTop: insets.top + t.spacing.sm }]}>
+          <Pressable onPress={() => router.back()} hitSlop={10}>
+            <Feather name="chevron-left" size={26} color={t.colors.white} />
+          </Pressable>
+          <View style={styles.coverActions}>{renderActions(t.colors.white)}</View>
+        </View>
+        <Pressable style={styles.coverNameWrap} onLongPress={pickCover} delayLongPress={400}>
+          <Text style={styles.coverName}>{group.name}</Text>
+        </Pressable>
+      </ImageBackground>
+    </>
+  ) : (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenHeader
@@ -153,24 +227,9 @@ export default function GroupDetailScreen() {
         onBack={() => router.back()}
         right={
           <>
-            <Pressable
-              onPress={() => router.push({ pathname: '/assistant', params: { group_id: id } })}
-              hitSlop={8}
-            >
-              <Feather name="zap" size={20} color={t.colors.accent} />
-            </Pressable>
-            <Pressable onPress={() => router.push(`/groups/${id}/receipt`)} hitSlop={8}>
-              <Feather name="camera" size={20} color={t.colors.accent} />
-            </Pressable>
-            <Pressable onPress={() => router.push(`/groups/${id}/activity`)} hitSlop={8}>
-              <Feather name="clock" size={20} color={t.colors.accent} />
-            </Pressable>
-            <Pressable onPress={onExport} disabled={exporting} hitSlop={8}>
-              {exporting ? (
-                <ActivityIndicator size="small" color={t.colors.accent} />
-              ) : (
-                <Feather name="download" size={20} color={t.colors.accent} />
-              )}
+            {renderActions(t.colors.accent)}
+            <Pressable onPress={pickCover} hitSlop={8}>
+              <Feather name="image" size={20} color={t.colors.accent} />
             </Pressable>
           </>
         }
@@ -437,6 +496,22 @@ const makeStyles = (t: Theme) =>
   content: { padding: t.spacing.xl, gap: t.spacing.lg, paddingBottom: t.spacing.xxxl },
   center: { flex: 1 },
   skeletonWrap: { padding: t.spacing.xl, gap: t.spacing.md },
+  cover: { width: '100%', justifyContent: 'space-between' },
+  coverTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: t.spacing.xl,
+    paddingBottom: t.spacing.sm,
+  },
+  coverActions: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.lg },
+  coverNameWrap: { paddingHorizontal: t.spacing.xl, paddingBottom: t.spacing.md },
+  coverName: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: t.colors.white,
+    letterSpacing: -0.2,
+  },
   error: {
     color: t.colors.negative,
     fontSize: t.typography.sizes.sm,
