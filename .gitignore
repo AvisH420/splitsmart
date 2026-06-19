@@ -42,3 +42,7 @@ yarn-error.log*
 *.mov
 *.mov
 *.mp4
+
+# README demo clips are intentionally tracked (small, committed for inline playback)
+!docs/readme-assets/*.mov
+!docs/readme-assets/*.mp4
